@@ -1,0 +1,16 @@
+﻿node_modules/
+dist/
+build/
+legacy-build/
+
+.env
+.env.local
+
+target/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+.idea/
+.vscode/

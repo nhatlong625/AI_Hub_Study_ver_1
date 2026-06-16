@@ -1,0 +1,43 @@
+export const documentCategories = ['Lecture Notes', 'Research', 'Summaries', 'Flashcards'];
+
+export const documents = [
+  {
+    id: 'doc-ml-01',
+    title: 'Neural Networks Revision Pack',
+    course: 'Machine Learning Foundations',
+    type: 'PDF',
+    category: 'Summaries',
+    pages: 24,
+    updatedAt: '2 hours ago',
+    size: '3.8 MB',
+    author: 'Dr. Naomi Reed',
+    progress: 82,
+    description: 'A compact study guide covering activations, loss functions, and backpropagation.',
+  },
+  {
+    id: 'doc-ui-02',
+    title: 'Design Systems Workshop Slides',
+    course: 'UI Systems for Product Teams',
+    type: 'PPT',
+    category: 'Lecture Notes',
+    pages: 36,
+    updatedAt: 'Yesterday',
+    size: '6.1 MB',
+    author: 'Amara Lowe',
+    progress: 44,
+    description: 'Workshop deck focused on tokens, accessibility, and scaling reusable patterns.',
+  },
+  {
+    id: 'doc-bio-03',
+    title: 'Cell Biology Annotated Notes',
+    course: 'General Biology',
+    type: 'DOCX',
+    category: 'Research',
+    pages: 18,
+    updatedAt: '3 days ago',
+    size: '1.7 MB',
+    author: 'Study Group A',
+    progress: 68,
+    description: 'Shared notes with highlighted pathways and review comments for exam prep.',
+  },
+];
