@@ -20,7 +20,7 @@ function LandingPage() {
           <Link to="/register">
             <Button>Get Started</Button>
           </Link>
-          <button className="landing-btn-demo" type="button" onClick={() => alert('Demo video starting soon!')}>
+          <button className="landing-btn-demo" type="button" onClick={() => alert('FSTUDY Demo video starting soon!')}>
             Watch Demo
           </button>
         </div>
