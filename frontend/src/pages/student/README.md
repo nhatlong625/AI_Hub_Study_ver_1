@@ -7,3 +7,7 @@ This directory contains the views and components specifically designed for stude
 - AI Study Assistant
 - Documents Management
 - Practice Tests
+
+## Sub-components
+- Study Session
+- Quiz View
