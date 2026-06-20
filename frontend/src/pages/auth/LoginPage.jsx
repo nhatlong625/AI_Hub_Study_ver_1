@@ -65,7 +65,7 @@ function LoginPage() {
         <div className="login-modal-header">
           <span className="login-modal-secure-label">SECURE ACCESS</span>
           <h2 className="login-modal-title">Welcome back</h2>
-          <p className="login-modal-subtitle">Enter your credentials to continue</p>
+          <p className="login-modal-subtitle">Enter your credentials to access your account</p>
         </div>
 
         {/* Form */}
