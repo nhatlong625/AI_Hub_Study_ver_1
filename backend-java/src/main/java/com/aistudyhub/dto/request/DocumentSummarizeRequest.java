@@ -1,8 +1,8 @@
-package com.aistudyhub.dto.request;
+﻿package com.aistudyhub.dto.request;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
-/** Body cho POST /api/documents/{id}/summarize â€” Java tá»± láº¥y ná»™i dung tÃ i liá»‡u, khÃ´ng cáº§n FE gá»­i text. */
+/** Body for POST /api/documents/{id}/summarize. Java reads document content; FE does not send text. */
 @Data
 public class DocumentSummarizeRequest {
     @NotNull Integer documentId;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 
 function ChatSidebar({ threads, citedSources, onSourceClick, onNewChat, onThreadSelect, onDeleteThread, recentError, variant = 'sources', showCourseFolders = false, courseFolder }) {
@@ -334,7 +334,7 @@ function ChatSidebar({ threads, citedSources, onSourceClick, onNewChat, onThread
                   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                 </span>
                 <span className="admin-sidebar-label" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '160px' }}>Python Loops Exercise</span>
-                <div className="custom-tooltip">BÃ i táº­p vÃ²ng láº·p Python</div>
+                <div className="custom-tooltip">Python loop exercises</div>
               </div>
             </>
           )}

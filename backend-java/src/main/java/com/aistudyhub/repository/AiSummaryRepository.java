@@ -1,4 +1,4 @@
-package com.aistudyhub.repository;
+﻿package com.aistudyhub.repository;
 
 import com.aistudyhub.model.SummaryHit;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -12,8 +12,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Ãƒâ€žÃ‚ÂÃƒÂ¡Ã‚Â»Ã‚Âc/viÃƒÂ¡Ã‚ÂºÃ‚Â¿t bÃƒÂ¡Ã‚ÂºÃ‚Â£ng AI_SUMMARY ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â nguÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“n context cho RAG chat (ChatService) vÃƒÆ’Ã‚Â 
- * nÃƒâ€ Ã‚Â¡i lÃƒâ€ Ã‚Â°u kÃƒÂ¡Ã‚ÂºÃ‚Â¿t quÃƒÂ¡Ã‚ÂºÃ‚Â£ summarize tÃƒÆ’Ã‚Â i liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u (DocumentService, dÃƒÆ’Ã‚Â¹ng ÃƒÂ¡Ã‚Â»Ã…Â¸ tÃƒÆ’Ã‚Â­nh nÃƒâ€žÃ†â€™ng summarize sau).
+ *
+ *
  */
 @Repository
 public class AiSummaryRepository {
@@ -38,7 +38,7 @@ public class AiSummaryRepository {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    /** XÃƒÆ’Ã‚Â³a tÃƒÂ¡Ã‚ÂºÃ‚Â¥t cÃƒÂ¡Ã‚ÂºÃ‚Â£ summary cÃƒÂ¡Ã‚Â»Ã‚Â§a 1 document ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â gÃƒÂ¡Ã‚Â»Ã‚Âi trÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºc khi xÃƒÆ’Ã‚Â³a document Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ trÃƒÆ’Ã‚Â¡nh FK constraint. */
+    /** AI summary repository helpers. */
     public void deleteByDocumentId(Integer documentId) {
         jdbcTemplate.update("DELETE FROM AI_SUMMARY WHERE document_id = ?", documentId);
     }
@@ -84,7 +84,7 @@ public class AiSummaryRepository {
                 """, String.class, documentId);
         return summaries.stream().findFirst();
     }
-    /** LÃƒÂ¡Ã‚ÂºÃ‚Â¥y cÃƒÆ’Ã‚Â¡c summary cÃƒÂ¡Ã‚Â»Ã‚Â§a user, lÃƒÂ¡Ã‚Â»Ã‚Âc theo subject/document nÃƒÂ¡Ã‚ÂºÃ‚Â¿u cÃƒÆ’Ã‚Â³ ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â dÃƒÆ’Ã‚Â¹ng lÃƒÆ’Ã‚Â m context RAG cho chat. */
+    /** AI summary repository helpers. */
     public List<SummaryHit> findForChatContext(Integer userId, List<Integer> subjectIds, List<Integer> documentIds) {
         StringBuilder sql = new StringBuilder("""
                 WITH readable_documents AS (

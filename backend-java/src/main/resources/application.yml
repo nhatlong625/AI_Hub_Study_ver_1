@@ -1,10 +1,10 @@
-spring:
+﻿spring:
   config:
     import: optional:file:.env[.properties],optional:file:backend-java/.env[.properties]
   application:
     name: ai-study-hub-backend
 
-  # â”€â”€ Database (SQL Server) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  # Database (SQL Server)
   datasource:
     url: ${DB_URL:jdbc:sqlserver://${DB_HOST:localhost};instanceName=${DB_INSTANCE:};databaseName=${DB_NAME:AI_StudyHub};encrypt=false;trustServerCertificate=true}
     username: ${DB_USERNAME:sa}
@@ -20,7 +20,7 @@ spring:
         dialect: org.hibernate.dialect.SQLServerDialect
         format_sql: true
 
-  # â”€â”€ Email (dÃ¹ng Gmail SMTP, thay báº±ng env tháº­t) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  # Email (Gmail SMTP by default, override with real env values)
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
@@ -33,7 +33,7 @@ spring:
           starttls:
             enable: true
 
-  # â”€â”€ File upload â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  # File upload
   servlet:
     multipart:
       max-file-size: 50MB
@@ -50,13 +50,13 @@ server:
       enabled: true
       force: true
 
-# â”€â”€ JWT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# JWT
 jwt:
   secret: ${JWT_SECRET:}
   expiration-ms: ${JWT_EXPIRATION_MS:86400000} # 24h
   refresh-expiration-ms: ${JWT_REFRESH_MS:604800000} # 7d
 
-# â”€â”€ Python AI Service â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Python AI Service
 ai:
   config:
     master-key: ${AI_CONFIG_MASTER_KEY:}
@@ -65,7 +65,7 @@ ai:
     base-url: ${PYTHON_AI_BASE_URL:http://127.0.0.1:8000}
     internal-api-key: ${PYTHON_INTERNAL_API_KEY:}
 
-# â”€â”€ Supabase Storage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Supabase Storage
 supabase:
   url: ${SUPABASE_URL:https://kwrwaklgyawktmjmdsrt.supabase.co}
   key: ${SUPABASE_SECRET_KEY:${SUPABASE_SERVICE_ROLE_KEY:${SUPABASE_KEY:}}}
@@ -82,7 +82,7 @@ cloudflare:
     bucket: ${CLOUDFLARE_R2_BUCKET:documents}
     public-url: ${CLOUDFLARE_R2_PUBLIC_URL:}
 
-# â”€â”€ App settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# App settings
 document-conversion:
   office-home: ${DOCUMENT_CONVERSION_OFFICE_HOME:}
 
