@@ -1,0 +1,10 @@
+{
+  "name": "ai-study-hub-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n dev:client,dev:server -c cyan,magenta \"npm --prefix frontend run dev -- --host 0.0.0.0\" \"mvn -f backend/pom.xml spring-boot:run\""
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3"
+  }
+}

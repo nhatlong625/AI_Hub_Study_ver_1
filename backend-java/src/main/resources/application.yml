@@ -1,0 +1,78 @@
+﻿spring:
+  application:
+    name: ai-study-hub-backend
+
+  # â”€â”€ Database (SQL Server) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  datasource:
+    url: ${DB_URL:jdbc:sqlserver://${DB_HOST:localhost};instanceName=${DB_INSTANCE:};databaseName=${DB_NAME:AI_StudyHub};encrypt=false;trustServerCertificate=true}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:12345}
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.SQLServerDialect
+        format_sql: true
+
+  # â”€â”€ Email (dÃ¹ng Gmail SMTP, thay báº±ng env tháº­t) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:your-email@gmail.com}
+    password: ${MAIL_PASSWORD:your-app-password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  # â”€â”€ File upload â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+  web:
+    resources:
+      add-mappings: false
+
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+# â”€â”€ JWT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+jwt:
+  secret: ${JWT_SECRET:aistudyhub-super-secret-key-change-in-production-must-be-at-least-32-chars}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000} # 24h
+  refresh-expiration-ms: ${JWT_REFRESH_MS:604800000} # 7d
+
+# ── Python AI Service ──────────────────────────────────
+ai:
+  python-service:
+    base-url: ${PYTHON_AI_BASE_URL:http://127.0.0.1:8000}
+
+# ── Supabase Storage ───────────────────────────────────
+supabase:
+  url: ${SUPABASE_URL:https://kwrwaklgyawktmjmdsrt.supabase.co}
+  key: ${SUPABASE_SECRET_KEY:${SUPABASE_SERVICE_ROLE_KEY:${SUPABASE_KEY:}}}
+  bucket: ${SUPABASE_BUCKET:documents}
+
+# â”€â”€ App settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  email-verify-url: ${EMAIL_VERIFY_URL:http://localhost:5173/verify-email}
+  password-reset-url: ${PASSWORD_RESET_URL:http://localhost:5173/reset-password}
+
+# â”€â”€ Logging â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+logging:
+  level:
+    com.microsoft.sqlserver: DEBUG
+    org.springframework.jdbc: DEBUG

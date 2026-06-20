@@ -1,0 +1,66 @@
+# ==========================================================
+#  AI_Study_Hub — root .gitignore (workspace: java + python + frontend)
+# ==========================================================
+
+# ----- Secrets / environment -----
+# Never commit real secrets. Keep the .env.example templates instead.
+.env
+.env.local
+.env.*.local
+**/.env
+!**/.env.example
+
+# ----- OS junk -----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ----- Editors / IDEs -----
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+
+# ----- Logs -----
+*.log
+logs/
+**/logs/*.log
+
+# ==========================================================
+#  Node / Frontend (React + Vite)
+# ==========================================================
+node_modules/
+**/node_modules/
+frontend/dist/
+dist/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ==========================================================
+#  Java backend (Maven / Spring Boot)
+# ==========================================================
+backend-java/target/
+**/target/
+*.class
+
+# ==========================================================
+#  Python backend (FastAPI / uvicorn)
+# ==========================================================
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+*.egg-info/
+
+# ==========================================================
+#  Misc scratch / temp files (not real source)
+# ==========================================================
+temp1.txt
+*.tmp
+*.bak

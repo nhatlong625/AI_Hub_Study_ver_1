@@ -1,0 +1,322 @@
+package com.aistudyhub.service;
+
+import com.aistudyhub.dto.python.PythonQuizGenerateRequest;
+import com.aistudyhub.dto.quiz.PracticeTestGenerateRequest;
+import com.aistudyhub.dto.quiz.PracticeTestSubmitRequest;
+import com.aistudyhub.exception.BadRequestException;
+import com.aistudyhub.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+@Service
+@RequiredArgsConstructor
+public class PracticeTestService {
+    private final NamedParameterJdbcTemplate jdbc;
+    private final DocumentService documentService;
+    private final WebClient pythonAiWebClient;
+
+    public List<Map<String, Object>> list(Integer userId) {
+        return jdbc.queryForList("""
+            SELECT aq.question_id AS id, aq.title, aq.description,
+                   aq.total_question AS questions, aq.time_limit AS timeLimit,
+                   CONVERT(NVARCHAR(19), aq.created_at, 120) AS createdAt,
+                   d.document_id AS documentId, d.title AS sourceTitle, d.document_name AS sourceName,
+                   sub.subject_name AS course,
+                   latest.score AS score,
+                   CASE WHEN latest.status = 'Completed' THEN 'Completed' ELSE 'Ready' END AS status
+            FROM dbo.AI_QUESTION aq
+            JOIN dbo.DOCUMENT d ON d.document_id = aq.document_id
+            JOIN dbo.SUBJECT sub ON sub.subject_id = d.subject_id
+            OUTER APPLY (
+                SELECT TOP 1 ta.score, ta.status
+                FROM dbo.TEST_ATTEMPT ta
+                WHERE ta.question_id = aq.question_id AND ta.user_id = :userId
+                ORDER BY ta.attempt_id DESC
+            ) latest
+            ORDER BY aq.question_id DESC
+            """, Map.of("userId", userId)).stream().map(this::testShape).toList();
+    }
+
+    public Map<String, Object> get(Integer id) {
+        Map<String, Object> test = testHeader(id);
+        test.put("questions", questions(id, false));
+        return test;
+    }
+
+    @Transactional
+    public Map<String, Object> generate(PracticeTestGenerateRequest request) {
+        Map<String, Object> doc = documentRow(request.getDocumentId());
+        String text = documentService.getAiReadableText(request.getDocumentId());
+        String title = blank(request.getTitle())
+                ? String.valueOf(doc.get("title")) + " Practice Test"
+                : request.getTitle().trim();
+
+        Map<String, Object> aiResult;
+        try {
+            aiResult = pythonAiWebClient.post()
+                    .uri("/api/quiz/generate")
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .bodyValue(new PythonQuizGenerateRequest(
+                            request.getDocumentId(),
+                            String.valueOf(doc.get("documentName")),
+                            title,
+                            text,
+                            request.getTotalQuestions(),
+                            request.getQuestionType(),
+                            request.getDifficulty()))
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+                    .block();
+        } catch (Exception e) {
+            throw new BadRequestException("AI quiz generation service unavailable: " + e.getMessage());
+        }
+
+        List<Map<String, Object>> generatedQuestions = extractQuestions(aiResult);
+        if (generatedQuestions.isEmpty()) {
+            throw new BadRequestException("AI service returned no quiz questions.");
+        }
+
+        Integer testId = jdbc.queryForObject("""
+            INSERT INTO dbo.AI_QUESTION (document_id, title, description, total_question, time_limit, created_at)
+            OUTPUT INSERTED.question_id
+            VALUES (:documentId, :title, :description, :totalQuestion, :timeLimit, GETDATE())
+            """, params("documentId", request.getDocumentId())
+                .addValue("title", title)
+                .addValue("description", "Generated from " + doc.get("documentName"))
+                .addValue("totalQuestion", generatedQuestions.size())
+                .addValue("timeLimit", request.getTimeLimit()), Integer.class);
+
+        for (Map<String, Object> question : generatedQuestions) {
+            saveQuestion(testId, question, request);
+        }
+
+        return get(testId);
+    }
+
+    @Transactional
+    public Map<String, Object> submit(Integer testId, PracticeTestSubmitRequest request) {
+        Map<String, Object> test = testHeader(testId);
+        List<Map<String, Object>> questions = questions(testId, true);
+        if (questions.isEmpty()) throw new ResourceNotFoundException("Practice test has no questions.");
+
+        int correct = 0;
+        Map<Integer, Integer> answers = request.getAnswers() == null ? Map.of() : request.getAnswers();
+
+        for (Map<String, Object> question : questions) {
+            Integer selected = answers.get(number(question.get("id")).intValue());
+            if (selected != null && Boolean.TRUE.equals(optionById(question, selected).get("isCorrect"))) {
+                correct++;
+            }
+        }
+
+        BigDecimal score = BigDecimal.valueOf(correct * 100.0 / questions.size()).setScale(2, RoundingMode.HALF_UP);
+        Integer attemptId = jdbc.queryForObject("""
+            INSERT INTO dbo.TEST_ATTEMPT (user_id, test_id, question_id, start_time, end_time, score, status)
+            OUTPUT INSERTED.attempt_id
+            VALUES (:userId, :firstQuizId, :testId, DATEADD(second, -:seconds, GETDATE()), GETDATE(), :score, 'Completed')
+            """, params("userId", request.getUserId())
+                .addValue("firstQuizId", questions.get(0).get("id"))
+                .addValue("testId", testId)
+                .addValue("seconds", request.getTimeSpentSeconds() == null ? 0 : request.getTimeSpentSeconds())
+                .addValue("score", score), Integer.class);
+
+        for (Map<String, Object> question : questions) {
+            Integer quizId = number(question.get("id")).intValue();
+            Integer selected = answers.get(quizId);
+            if (selected == null) continue;
+            Map<String, Object> option = optionById(question, selected);
+            jdbc.update("""
+                INSERT INTO dbo.USER_ANSWER (attempt_id, question_id, option_id, selected_answer, is_correct, answered_at)
+                VALUES (:attemptId, :quizId, :optionId, :selectedAnswer, :isCorrect, GETDATE())
+                """, params("attemptId", attemptId)
+                    .addValue("quizId", quizId)
+                    .addValue("optionId", selected)
+                    .addValue("selectedAnswer", option.getOrDefault("content", ""))
+                    .addValue("isCorrect", Boolean.TRUE.equals(option.get("isCorrect"))));
+        }
+
+        jdbc.update("""
+            INSERT INTO dbo.TEST_RESULT (attempt_id, total_question, correct_answer, score, grade, generated_at)
+            VALUES (:attemptId, :totalQuestion, :correctAnswer, :score, :grade, GETDATE())
+            """, params("attemptId", attemptId)
+                .addValue("totalQuestion", questions.size())
+                .addValue("correctAnswer", correct)
+                .addValue("score", score)
+                .addValue("grade", grade(score)));
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("attemptId", attemptId);
+        result.put("testId", testId);
+        result.put("title", test.get("title"));
+        result.put("total", questions.size());
+        result.put("correct", correct);
+        result.put("wrong", questions.size() - correct);
+        result.put("score", score);
+        result.put("grade", grade(score));
+        result.put("questions", questions(testId, true));
+        return result;
+    }
+
+    private void saveQuestion(Integer testId, Map<String, Object> question, PracticeTestGenerateRequest request) {
+        String content = str(question.get("question"), "Untitled question");
+        String type = str(question.get("type"), request.getQuestionType());
+        String difficulty = str(question.get("difficulty"), request.getDifficulty());
+        String correctAnswer = str(question.get("correctAnswer"), str(question.get("correct_answer"), ""));
+
+        Integer quizId = jdbc.queryForObject("""
+            INSERT INTO dbo.QUIZ_TEST (question_id, question_content, question_type, correct_answer, difficulty_level)
+            OUTPUT INSERTED.quiz_id
+            VALUES (:testId, :content, :type, :correctAnswer, :difficulty)
+            """, params("testId", testId)
+                .addValue("content", content)
+                .addValue("type", type)
+                .addValue("correctAnswer", correctAnswer)
+                .addValue("difficulty", difficulty), Integer.class);
+
+        List<?> rawOptions = question.get("options") instanceof List<?> list ? list : List.of();
+        if (rawOptions.isEmpty() && !blank(correctAnswer)) {
+            rawOptions = List.of(correctAnswer);
+        }
+
+        for (Object rawOption : rawOptions) {
+            String optionContent;
+            boolean isCorrect = false;
+            if (rawOption instanceof Map<?, ?> map) {
+                optionContent = str(map.get("content"), str(map.get("text"), ""));
+                Object correct = map.get("isCorrect") == null ? map.get("is_correct") : map.get("isCorrect");
+                isCorrect = Boolean.TRUE.equals(correct) || "true".equalsIgnoreCase(String.valueOf(correct));
+            } else {
+                optionContent = String.valueOf(rawOption);
+            }
+            if (blank(optionContent)) continue;
+            if (!blank(correctAnswer) && optionContent.trim().equalsIgnoreCase(correctAnswer.trim())) {
+                isCorrect = true;
+            }
+            jdbc.update("""
+                INSERT INTO dbo.ANSWER_OPTION (question_id, option_content, is_correct)
+                VALUES (:quizId, :content, :isCorrect)
+                """, params("quizId", quizId).addValue("content", optionContent).addValue("isCorrect", isCorrect));
+        }
+    }
+
+    private Map<String, Object> testHeader(Integer id) {
+        List<Map<String, Object>> rows = jdbc.queryForList("""
+            SELECT aq.question_id AS id, aq.title, aq.description,
+                   aq.total_question AS totalQuestions, aq.time_limit AS timeLimit,
+                   CONVERT(NVARCHAR(19), aq.created_at, 120) AS createdAt,
+                   d.document_id AS documentId, d.title AS sourceTitle, d.document_name AS sourceName,
+                   sub.subject_name AS course
+            FROM dbo.AI_QUESTION aq
+            JOIN dbo.DOCUMENT d ON d.document_id = aq.document_id
+            JOIN dbo.SUBJECT sub ON sub.subject_id = d.subject_id
+            WHERE aq.question_id = :id
+            """, Map.of("id", id));
+        if (rows.isEmpty()) throw new ResourceNotFoundException("Practice test not found: " + id);
+        return new LinkedHashMap<>(rows.get(0));
+    }
+
+    private List<Map<String, Object>> questions(Integer testId, boolean includeCorrect) {
+        List<Map<String, Object>> questionRows = jdbc.queryForList("""
+            SELECT quiz_id AS id, question_content AS question, question_type AS type,
+                   difficulty_level AS difficulty, correct_answer AS correctAnswer
+            FROM dbo.QUIZ_TEST
+            WHERE question_id = :testId
+            ORDER BY quiz_id
+            """, Map.of("testId", testId));
+
+        List<Map<String, Object>> shaped = new ArrayList<>();
+        for (Map<String, Object> row : questionRows) {
+            Map<String, Object> question = new LinkedHashMap<>(row);
+            List<Map<String, Object>> options = jdbc.queryForList("""
+                SELECT option_id AS id, option_content AS content, is_correct AS isCorrect
+                FROM dbo.ANSWER_OPTION
+                WHERE question_id = :quizId
+                ORDER BY option_id
+                """, Map.of("quizId", row.get("id"))).stream().map(option -> {
+                Map<String, Object> shapedOption = new LinkedHashMap<>(option);
+                if (!includeCorrect) shapedOption.remove("isCorrect");
+                return shapedOption;
+            }).toList();
+            if (!includeCorrect) question.remove("correctAnswer");
+            question.put("options", options);
+            shaped.add(question);
+        }
+        return shaped;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> extractQuestions(Map<String, Object> aiResult) {
+        if (aiResult == null || !(aiResult.get("questions") instanceof List<?> list)) {
+            return List.of();
+        }
+        return list.stream()
+                .filter(Map.class::isInstance)
+                .map(item -> (Map<String, Object>) item)
+                .toList();
+    }
+
+    private Map<String, Object> documentRow(Integer documentId) {
+        List<Map<String, Object>> rows = jdbc.queryForList("""
+            SELECT document_id AS documentId, title, document_name AS documentName
+            FROM dbo.DOCUMENT
+            WHERE document_id = :documentId
+            """, Map.of("documentId", documentId));
+        if (rows.isEmpty()) throw new ResourceNotFoundException("Document not found: " + documentId);
+        return rows.get(0);
+    }
+
+    private Map<String, Object> testShape(Map<String, Object> row) {
+        Map<String, Object> shaped = new LinkedHashMap<>(row);
+        shaped.put("source", row.get("sourceTitle") == null ? row.get("sourceName") : row.get("sourceTitle"));
+        return shaped;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> optionById(Map<String, Object> question, Integer optionId) {
+        List<Map<String, Object>> options = (List<Map<String, Object>>) question.get("options");
+        return options.stream()
+                .filter(option -> number(option.get("id")).intValue() == optionId)
+                .findFirst()
+                .orElseThrow(() -> new BadRequestException("Invalid answer option: " + optionId));
+    }
+
+    private MapSqlParameterSource params(String key, Object value) {
+        return new MapSqlParameterSource(key, value);
+    }
+
+    private BigDecimal number(Object value) {
+        if (value instanceof BigDecimal bd) return bd;
+        if (value instanceof Number n) return BigDecimal.valueOf(n.doubleValue());
+        if (value == null) return BigDecimal.ZERO;
+        return new BigDecimal(String.valueOf(value));
+    }
+
+    private String grade(BigDecimal score) {
+        if (score.compareTo(BigDecimal.valueOf(85)) >= 0) return "Excellent";
+        if (score.compareTo(BigDecimal.valueOf(70)) >= 0) return "Good";
+        if (score.compareTo(BigDecimal.valueOf(50)) >= 0) return "Review";
+        return "Needs Practice";
+    }
+
+    private boolean blank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private String str(Object value, String fallback) {
+        return value == null || String.valueOf(value).isBlank() ? fallback : String.valueOf(value);
+    }
+}
