@@ -90,7 +90,7 @@ function RegisterPage() {
         <div className="register-form-container">
           <div className="register-form-header">
             <h2 className="register-form-title">Create your account</h2>
-            <p className="register-form-subtitle">Start your journey to smarter studying today.</p>
+            <p className="register-form-subtitle">Start your journey to smarter learning today.</p>
           </div>
 
           <form className="login-modal-form" onSubmit={handleRegister}>
