@@ -1,139 +1,227 @@
-import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import logoImg from '../../assets/images/logo.png';
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import Navbar from "../../components/landing/Navbar";
+import Footer from "../../components/landing/Footer";
+import { authService } from "../../services/authService";
 
-function VerifyEmailPage() {
+const ShieldIcon = () => (
+  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#5046e5" strokeWidth="1.6">
+    <path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z" />
+    <rect x="9.5" y="11" width="5" height="4.5" rx="1" />
+    <path d="M10.5 11V9.5a1.5 1.5 0 0 1 3 0V11" />
+  </svg>
+);
+
+export default function VerifyEmailPage() {
+  const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const email = searchParams.get('email') || '';
+  const urlToken = searchParams.get("token") || "";
+  const email = location.state?.email || "";
 
-  const [code, setCode] = useState(['', '', '', '', '', '']);
-  const [codeError, setCodeError] = useState('');
+  const [digits, setDigits] = useState(["", "", "", "", "", ""]);
+  const [message, setMessage] = useState("");
+  const [isError, setIsError] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const inputRefs = useRef([]);
 
-  const handleCodeChange = (value, index) => {
-    if (value !== '' && isNaN(value)) return;
-    
-    const newCode = [...code];
-    newCode[index] = value;
-    setCode(newCode);
-
-    // Auto focus next input
-    if (value !== '' && index < 5) {
-      const nextInput = document.getElementById(`code-${index + 1}`);
-      if (nextInput) nextInput.focus();
-    }
-  };
-
-  const handleCodeKeyDown = (e, index) => {
-    // Backspace on empty field moves focus backward
-    if (e.key === 'Backspace' && code[index] === '' && index > 0) {
-      const prevInput = document.getElementById(`code-${index - 1}`);
-      if (prevInput) {
-        prevInput.focus();
-      }
-    }
-  };
-
-  const handleVerifyCode = (e) => {
-    e.preventDefault();
-    const verificationCode = code.join('');
-    if (verificationCode.length < 6) {
-      setCodeError('Please enter the full 6-digit code');
+  const verifyToken = async (tokenValue) => {
+    const value = tokenValue.trim();
+    if (!value) {
+      setIsError(true);
+      setMessage("Please enter the 6-digit code from your email.");
       return;
     }
-    setCodeError('');
-    
-    // Successfully verified -> Navigate back to forgot password to reset password
-    navigate(`/forgot-password?step=reset&email=${encodeURIComponent(email)}`);
+    setMessage("");
+    setIsError(false);
+    setLoading(true);
+    try {
+      const data = await authService.verifyEmail(value);
+      setMessage(data.message || "Email verified successfully.");
+      setTimeout(() => navigate("/login"), 1600);
+    } catch (error) {
+      setIsError(true);
+      setMessage(error.message || "Verification failed. Please check the code and try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // Auto-verify khi vào từ link email (có ?token= trong URL)
+  useEffect(() => {
+    if (urlToken) verifyToken(urlToken);
+  }, [urlToken]);
+
+  const handleDigitChange = (index, value) => {
+    // Chỉ nhận chữ số
+    const digit = value.replace(/\D/g, "").slice(-1);
+    const newDigits = [...digits];
+    newDigits[index] = digit;
+    setDigits(newDigits);
+    // Tự động chuyển sang ô tiếp theo
+    if (digit && index < 5) inputRefs.current[index + 1]?.focus();
+    // Auto submit khi điền đủ 6 số
+    if (digit && index === 5) {
+      const code = newDigits.join("");
+      if (code.length === 6) verifyToken(code);
+    }
+  };
+
+  const handleKeyDown = (index, e) => {
+    if (e.key === "Backspace" && !digits[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pasted) return;
+    const newDigits = ["", "", "", "", "", ""];
+    pasted.split("").forEach((ch, i) => { newDigits[i] = ch; });
+    setDigits(newDigits);
+    const nextEmpty = pasted.length < 6 ? pasted.length : 5;
+    inputRefs.current[nextEmpty]?.focus();
+    if (pasted.length === 6) verifyToken(pasted);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    verifyToken(digits.join(""));
+  };
+
+  const isComplete = digits.every((d) => d !== "");
+
   return (
-    <div className="auth-shell">
-      <div className="login-modal-card">
-        {/* Logo */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-          <Link to="/">
-            <img
-              src={logoImg}
-              alt="FSTUDY"
-              style={{
-                height: '56px',
-                objectFit: 'contain',
-                mixBlendMode: 'multiply',
-                transition: 'transform 0.2s ease',
-              }}
-              onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-              onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
-            />
-          </Link>
-        </div>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#f4f0fe" }}>
+      <Navbar />
+      <main style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "64px 24px" }}>
+        <div style={{ width: "100%", maxWidth: "480px", background: "#fff", borderRadius: "24px", boxShadow: "0 20px 60px rgba(80,70,229,0.12)", overflow: "hidden" }}>
+          <div style={{ height: "5px", background: "linear-gradient(90deg, #6352e5 0%, #4c45e5 60%, #8c84f0 100%)" }} />
 
-        {/* Header */}
-        <div className="login-modal-header" style={{ marginBottom: '20px' }}>
-          <span className="login-modal-secure-label" style={{ letterSpacing: '0.08em' }}>IDENTITY VERIFICATION</span>
-          <h2 className="login-modal-title" style={{ fontSize: '1.65rem' }}>Verify your email</h2>
-          <p className="login-modal-subtitle" style={{ fontSize: '0.88rem', padding: '0 10px', lineHeight: '1.5' }}>
-            We've sent a 6-digit code to <br />
-            <strong style={{ color: 'var(--color-text)' }}>{email || 'alex@example.com'}</strong>
-          </p>
-        </div>
+          <div style={{ padding: "44px 40px 36px" }}>
+            {/* Header */}
+            <div style={{ textAlign: "center", marginBottom: "32px" }}>
+              <div style={{ width: "80px", height: "80px", borderRadius: "20px", background: "rgba(99,82,229,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+                <ShieldIcon />
+              </div>
+              <p style={{ fontSize: "14px", fontWeight: "700", letterSpacing: "1.5px", color: "#5046e5", margin: "0 0 12px" }}>
+                IDENTITY VERIFICATION
+              </p>
+              <h1 style={{ fontSize: "30px", fontWeight: "900", color: "#1a1637", margin: "0 0 14px", letterSpacing: "-0.5px" }}>
+                {urlToken ? "Verifying..." : "Check your email"}
+              </h1>
+              {!urlToken && (
+                <p style={{ fontSize: "15px", color: "#524f63", margin: 0, lineHeight: "1.6" }}>
+                  We sent a 6-digit code to{" "}
+                  {email
+                    ? <strong style={{ color: "#1a1637" }}>{email}</strong>
+                    : "your email address"
+                  }
+                </p>
+              )}
+            </div>
 
-        {/* 6-Digit input boxes */}
-        <form className="login-modal-form" onSubmit={handleVerifyCode}>
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', margin: '8px 0' }}>
-            {code.map((digit, idx) => (
-              <input
-                key={idx}
-                type="text"
-                maxLength={1}
-                value={digit}
-                onChange={(e) => handleCodeChange(e.target.value, idx)}
-                onKeyDown={(e) => handleCodeKeyDown(e, idx)}
-                id={`code-${idx}`}
-                className="login-modal-input"
-                style={{ width: '48px', height: '54px', textAlign: 'center', fontSize: '1.25rem', fontWeight: 'bold', padding: 0 }}
-                autoComplete="one-time-code"
-              />
-            ))}
-          </div>
-          {codeError && (
-            <p style={{ color: 'var(--color-error)', fontSize: '0.8rem', textAlign: 'center', margin: '-4px 0 4px' }}>
-              {codeError}
+            {/* Form nhập mã 6 số — chỉ hiện khi không phải auto-verify từ link */}
+            {!urlToken && (
+              <form onSubmit={handleSubmit}>
+                {/* 6 ô input tách biệt */}
+                <div style={{ display: "flex", gap: "10px", justifyContent: "center", marginBottom: "28px" }}>
+                  {digits.map((digit, i) => (
+                    <input
+                      key={i}
+                      ref={(el) => (inputRefs.current[i] = el)}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleDigitChange(i, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(i, e)}
+                      onPaste={i === 0 ? handlePaste : undefined}
+                      style={{
+                        width: "52px",
+                        height: "60px",
+                        textAlign: "center",
+                        fontSize: "24px",
+                        fontWeight: "800",
+                        color: "#1a1637",
+                        border: `2px solid ${digit ? "#5046e5" : "#e0dbf5"}`,
+                        borderRadius: "12px",
+                        outline: "none",
+                        background: digit ? "#f4f0fe" : "#fff",
+                        transition: "all 0.15s ease",
+                        cursor: "text",
+                      }}
+                      onFocus={(e) => (e.currentTarget.style.borderColor = "#7a70e8")}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = digit ? "#5046e5" : "#e0dbf5")}
+                    />
+                  ))}
+                </div>
+
+                {message && (
+                  <p style={{ fontSize: "13px", color: isError ? "#e54545" : "#15803d", margin: "-8px 0 18px", textAlign: "center", lineHeight: "1.5" }}>
+                    {message}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading || !isComplete}
+                  style={{
+                    width: "100%",
+                    padding: "15px",
+                    borderRadius: "12px",
+                    border: "none",
+                    background: isComplete && !loading
+                      ? "linear-gradient(135deg, #6352e5 0%, #4c45e5 60%, #8c84f0 100%)"
+                      : "#d8d4e8",
+                    color: "#fff",
+                    fontSize: "16px",
+                    fontWeight: "700",
+                    cursor: isComplete && !loading ? "pointer" : "not-allowed",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    boxShadow: isComplete && !loading ? "0 8px 24px rgba(80,70,229,0.3)" : "none",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {loading ? "Verifying..." : "Verify email"}
+                  {!loading && (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5">
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                  )}
+                </button>
+              </form>
+            )}
+
+            {/* Message khi auto-verify từ link */}
+            {urlToken && message && (
+              <p style={{ fontSize: "14px", color: isError ? "#e54545" : "#15803d", textAlign: "center", lineHeight: "1.5" }}>
+                {message}
+              </p>
+            )}
+
+            <p style={{ textAlign: "center", fontSize: "14px", color: "#6b6880", margin: "20px 0 0" }}>
+              Didn't receive the email? Check your inbox or spam folder.
             </p>
-          )}
 
-          <button type="submit" className="login-modal-submit" style={{ marginTop: '8px' }}>
-            Verify Code
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12"/>
-              <polyline points="12 5 19 12 12 19"/>
-            </svg>
-          </button>
-        </form>
+            <div style={{ height: "1px", background: "#e8e4f5", margin: "24px 0" }} />
 
-        {/* Didn't receive code footer */}
-        <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--color-text-soft)', marginTop: '20px', marginBottom: 0 }}>
-          Didn't receive the code?{' '}
-          <button
-            type="button"
-            style={{ background: 'none', border: 'none', padding: 0, color: 'var(--color-primary)', fontWeight: 700, cursor: 'pointer' }}
-            onClick={() => alert('Verification code resent!')}
-          >
-            Resend
-          </button>
-        </p>
-
-        {/* Back to Login Link */}
-        <Link to="/login" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', color: 'var(--color-text-soft)', fontWeight: 600, fontSize: '0.88rem', marginTop: '24px' }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
-            <line x1="19" y1="12" x2="5" y2="12"/>
-            <polyline points="12 19 5 12 12 5"/>
-          </svg>
-          Back to Login
-        </Link>
-      </div>
+            <p style={{ textAlign: "center", fontSize: "14px", margin: 0 }}>
+              <Link to="/login" style={{ color: "#5046e5", fontWeight: "700", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5046e5" strokeWidth="2.5">
+                  <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Back to login
+              </Link>
+            </p>
+          </div>
+        </div>
+      </main>
+      <Footer />
     </div>
   );
 }
-
-export default VerifyEmailPage;
