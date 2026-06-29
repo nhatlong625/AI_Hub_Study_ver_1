@@ -1,7 +1,11 @@
 function SourceReferenceCard({ source, onClick }) {
+  const label = typeof source === 'string'
+    ? source
+    : source?.documentName || source?.document_name || source?.title || 'Source document';
+
   return (
     <div
-      title={source}
+      title={label}
       onClick={() => onClick?.(source)}
       role="button"
       tabIndex={0}
@@ -33,7 +37,7 @@ function SourceReferenceCard({ source, onClick }) {
         <polyline points="10 9 9 9 8 9"></polyline>
       </svg>
       <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        {source}
+        {label}
       </span>
     </div>
   );

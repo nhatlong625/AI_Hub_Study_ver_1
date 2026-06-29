@@ -1,9 +1,66 @@
 ﻿import React, { useRef, useEffect } from 'react';
 import SourceReferenceCard from './SourceReferenceCard';
-import fstudyAvatar from '../../../assets/images/fstudy-chatbot-avatar.png';
-import userAvatar from '../../../assets/images/logo.png';
+import fstudyAvatar from '../../../assets/chat/fstudy-chatbot-avatar.png';
+import userAvatar from '../../../assets/logos/logo.png';
 
-function renderMessageContent(content) {
+function renderInlineMarkdown(text, keyPrefix) {
+  const segments = String(text).split(/(\*\*[^*]+\*\*)/g);
+
+  return segments.map((segment, index) => {
+    const key = `${keyPrefix}-${index}`;
+    if (segment.startsWith('**') && segment.endsWith('**')) {
+      return (
+        <strong key={key} style={{ color: '#4338ca', fontWeight: 800 }}>
+          {segment.slice(2, -2)}
+        </strong>
+      );
+    }
+    return <React.Fragment key={key}>{segment}</React.Fragment>;
+  });
+}
+
+function renderTextLine(line, key, isFirstLine) {
+  const trimmed = line.trim();
+  const headingMatch = trimmed.match(/^#{1,6}\s+(.+)$/);
+  if (headingMatch) {
+    return (
+      <h3 key={key} style={{ margin: isFirstLine ? 0 : '14px 0 6px', color: '#312e81', fontSize: '1.02rem', fontWeight: 850 }}>
+        {renderInlineMarkdown(headingMatch[1], key)}
+      </h3>
+    );
+  }
+
+  const bulletMatch = trimmed.match(/^[-*]\s+(.+)$/);
+  if (bulletMatch) {
+    return (
+      <div key={key} style={{ display: 'flex', gap: '8px', margin: isFirstLine ? 0 : '8px 0 0', alignItems: 'flex-start' }}>
+        <span style={{ color: '#4f46e5', lineHeight: '1.65' }}>•</span>
+        <p style={{ margin: 0, flex: 1 }}>
+          {renderInlineMarkdown(bulletMatch[1], key)}
+        </p>
+      </div>
+    );
+  }
+
+  const titleMatch = trimmed.match(/^\*\*(.+?)\*\*:?\s*(.*)$/);
+  if (titleMatch) {
+    const title = titleMatch[2] ? titleMatch[1].replace(/:\s*$/, '') : titleMatch[1];
+    return (
+      <p key={key} style={{ margin: isFirstLine ? 0 : '10px 0 0' }}>
+        <strong style={{ color: '#4338ca', fontWeight: 850 }}>{title}</strong>
+        {titleMatch[2] ? `: ${titleMatch[2]}` : ''}
+      </p>
+    );
+  }
+
+  return (
+    <p key={key} style={{ margin: isFirstLine ? 0 : '8px 0 0' }}>
+      {renderInlineMarkdown(trimmed, key)}
+    </p>
+  );
+}
+
+export function renderMessageContent(content) {
   const parts = String(content).split(/```(\w+)?\n?([\s\S]*?)```/g);
 
   return parts.map((part, index) => {
@@ -11,11 +68,7 @@ function renderMessageContent(content) {
       return part
         .split('\n')
         .filter(line => line.trim())
-        .map((line, lineIndex) => (
-          <p key={`${index}-${lineIndex}`} style={{ margin: lineIndex === 0 ? 0 : '8px 0 0' }}>
-            {line}
-          </p>
-        ));
+        .map((line, lineIndex) => renderTextLine(line, `${index}-${lineIndex}`, lineIndex === 0));
     }
 
     if (index % 3 === 1) {
@@ -62,6 +115,7 @@ function renderMessageContent(content) {
 
 function ChatMessage({ message, isHighlighted, onSourceClick }) {
   const isUser = message.role === 'user';
+  const displayedSources = Array.isArray(message.sources) ? message.sources.slice(0, 1) : [];
   const messageRef = useRef(null);
 
   useEffect(() => {
@@ -132,9 +186,9 @@ function ChatMessage({ message, isHighlighted, onSourceClick }) {
           {renderMessageContent(message.content)}
         </div>
         
-        {message.sources && message.sources.length > 0 && (
+        {displayedSources.length > 0 && (
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {message.sources.map((src, idx) => (
+            {displayedSources.map((src, idx) => (
               <SourceReferenceCard key={idx} source={src} onClick={onSourceClick} />
             ))}
           </div>
@@ -145,4 +199,3 @@ function ChatMessage({ message, isHighlighted, onSourceClick }) {
 }
 
 export default ChatMessage;
-

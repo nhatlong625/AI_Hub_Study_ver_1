@@ -1,10 +1,17 @@
 ﻿import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 
-function ChatSidebar({ threads, citedSources, onSourceClick, variant = 'sources', showCourseFolders = false, courseFolder }) {
+function ChatSidebar({ threads, citedSources, onSourceClick, onNewChat, onThreadSelect, onDeleteThread, recentError, variant = 'sources', showCourseFolders = false, courseFolder }) {
   const [expandedFolders, setExpandedFolders] = useState({ SWR: true });
+  const [openThreadMenuId, setOpenThreadMenuId] = useState(null);
+  const location = useLocation();
   const folderName = courseFolder?.name || 'SWR';
   const folderFiles = courseFolder?.files || [];
+  const sourceLabel = (source) => (
+    typeof source === 'string'
+      ? source
+      : source?.documentName || source?.document_name || source?.title || 'Source document'
+  );
   
   const toggleFolder = (folderName) => {
     setExpandedFolders(prev => ({
@@ -14,9 +21,9 @@ function ChatSidebar({ threads, citedSources, onSourceClick, variant = 'sources'
   };
 
   return (
-    <aside className="chat-sidebar" style={{ width: '280px', borderRight: '1px solid #eaeaea', display: 'flex', flexDirection: 'column', height: '100%', background: '#ffffff', flexShrink: 0 }}>
+    <aside className={`chat-sidebar ${variant === 'newChat' && !showCourseFolders ? 'hide-source-section' : ''}`} style={{ width: '280px', borderRight: '1px solid #eaeaea', display: 'flex', flexDirection: 'column', height: '100%', background: '#ffffff', flexShrink: 0 }}>
       <div style={{ padding: '24px 20px 16px' }}>
-        <NavLink to="/student/ai-tutor/chat" style={{ textDecoration: 'none' }}>
+        <NavLink to="/student/ai-tutor" style={{ textDecoration: 'none' }} onClick={onNewChat}>
           <button style={{ 
             width: '100%', 
             background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
@@ -138,7 +145,7 @@ function ChatSidebar({ threads, citedSources, onSourceClick, variant = 'sources'
                 key={idx}
                 className="sidebar-link admin-sidebar-link chat-source-row" 
                 onClick={() => onSourceClick && onSourceClick(item)}
-                title={item.source}
+                title={sourceLabel(item.source)}
               >
                 <span className="sidebar-icon admin-sidebar-icon chat-source-icon">
                   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -149,7 +156,7 @@ function ChatSidebar({ threads, citedSources, onSourceClick, variant = 'sources'
                 <span
                   className="admin-sidebar-label chat-source-label"
                 >
-                  {item.source}
+                  {sourceLabel(item.source)}
                 </span>
               </div>
             ))
@@ -161,22 +168,144 @@ function ChatSidebar({ threads, citedSources, onSourceClick, variant = 'sources'
 
         <h4 style={{ fontSize: '10px', fontWeight: '700', color: '#888', letterSpacing: '0.5px', marginBottom: '8px' }}>RECENT</h4>
         <div className="sidebar-menu admin-sidebar-menu">
-          {threads && threads.map((thread, idx) => (
-            <NavLink 
-              to={thread.href || `/student/ai-tutor/chat/${thread.id}`} 
-              key={idx} 
-              className={({ isActive }) => ['sidebar-link', 'admin-sidebar-link', isActive ? 'active' : ''].join(' ').trim()}
-              style={{ position: 'relative' }}
-            >
-              <span className="sidebar-icon admin-sidebar-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                </svg>
-              </span>
-              <span className="admin-sidebar-label" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '160px' }}>{thread.title}</span>
-              <div className="custom-tooltip">{thread.title}</div>
-            </NavLink>
-          ))}
+          {recentError ? (
+            <div style={{ color: '#dc2626', fontSize: '12px', lineHeight: 1.45, padding: '8px 4px' }}>
+              Cannot load recent chats from backend.
+            </div>
+          ) : threads && threads.length > 0 ? threads.map((thread, idx) => {
+            const threadMenuId = thread.id || `thread-${idx}`;
+            const isThreadMenuOpen = openThreadMenuId === threadMenuId;
+            const threadPath = thread.href || `/student/ai-tutor/chat/${thread.id}`;
+            const isActiveThread = location.pathname === threadPath;
+
+            return (
+              <div key={threadMenuId} style={{ position: 'relative' }}>
+                <NavLink 
+                  to={threadPath} 
+                  className={({ isActive }) => ['sidebar-link', 'admin-sidebar-link', isActive ? 'active' : ''].join(' ').trim()}
+                  style={{ position: 'relative', paddingRight: onDeleteThread ? '38px' : '12px' }}
+                  onClick={() => {
+                    setOpenThreadMenuId(null);
+                    onThreadSelect?.(thread);
+                  }}
+                >
+                  <span className="sidebar-icon admin-sidebar-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                  </span>
+                  <span className="admin-sidebar-label" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: onDeleteThread ? '126px' : '160px' }}>{thread.title}</span>
+                  <div className="custom-tooltip">{thread.title}</div>
+                </NavLink>
+                {onDeleteThread && (
+                  <>
+                    <button
+                      type="button"
+                      title={`More options for ${thread.title}`}
+                      aria-label={`More options for ${thread.title}`}
+                      aria-haspopup="menu"
+                      aria-expanded={isThreadMenuOpen}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setOpenThreadMenuId(isThreadMenuOpen ? null : threadMenuId);
+                      }}
+                      style={{
+                        position: 'absolute',
+                        top: '50%',
+                        right: '8px',
+                        transform: 'translateY(-50%)',
+                        width: '24px',
+                        height: '24px',
+                        border: 'none',
+                        borderRadius: '6px',
+                        background: isThreadMenuOpen ? (isActiveThread ? 'rgba(255, 255, 255, 0.16)' : '#f4f0ff') : 'transparent',
+                        color: isActiveThread ? 'rgba(255, 255, 255, 0.86)' : '#8a8796',
+                        display: 'grid',
+                        placeItems: 'center',
+                        cursor: 'pointer',
+                        opacity: isThreadMenuOpen ? 1 : 0.72
+                      }}
+                      onMouseEnter={(event) => {
+                        event.currentTarget.style.background = isActiveThread ? 'rgba(255, 255, 255, 0.16)' : '#f4f0ff';
+                        event.currentTarget.style.color = isActiveThread ? '#ffffff' : '#5046e5';
+                        event.currentTarget.style.opacity = '1';
+                      }}
+                      onMouseLeave={(event) => {
+                        event.currentTarget.style.background = isThreadMenuOpen ? (isActiveThread ? 'rgba(255, 255, 255, 0.16)' : '#f4f0ff') : 'transparent';
+                        event.currentTarget.style.color = isActiveThread ? 'rgba(255, 255, 255, 0.86)' : '#8a8796';
+                        event.currentTarget.style.opacity = isThreadMenuOpen ? '1' : '0.72';
+                      }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="1"></circle>
+                        <circle cx="19" cy="12" r="1"></circle>
+                        <circle cx="5" cy="12" r="1"></circle>
+                      </svg>
+                    </button>
+                    {isThreadMenuOpen && (
+                      <div
+                        role="menu"
+                        style={{
+                          position: 'absolute',
+                          top: '34px',
+                          right: '6px',
+                          minWidth: '126px',
+                          background: '#ffffff',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '10px',
+                          boxShadow: '0 14px 30px rgba(15, 23, 42, 0.14)',
+                          padding: '6px',
+                          zIndex: 30
+                        }}
+                      >
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setOpenThreadMenuId(null);
+                            onDeleteThread(thread);
+                          }}
+                          style={{
+                            width: '100%',
+                            border: 'none',
+                            borderRadius: '8px',
+                            background: 'transparent',
+                            color: '#dc2626',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '9px 10px',
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            textAlign: 'left'
+                          }}
+                          onMouseEnter={(event) => {
+                            event.currentTarget.style.background = '#fee2e2';
+                          }}
+                          onMouseLeave={(event) => {
+                            event.currentTarget.style.background = 'transparent';
+                          }}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 6h18"></path>
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                          </svg>
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          }) : (
+            <div className="chat-sidebar-empty">No saved chats yet</div>
+          )}
           {!threads && (
             <>
               <div className="sidebar-link admin-sidebar-link" style={{ cursor: 'pointer', position: 'relative' }}>
@@ -205,7 +334,7 @@ function ChatSidebar({ threads, citedSources, onSourceClick, variant = 'sources'
                   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                 </span>
                 <span className="admin-sidebar-label" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '160px' }}>Python Loops Exercise</span>
-                <div className="custom-tooltip">BÃ i táº­p vÃ²ng láº·p Python</div>
+                <div className="custom-tooltip">Python loop exercises</div>
               </div>
             </>
           )}
@@ -220,4 +349,3 @@ function ChatSidebar({ threads, citedSources, onSourceClick, variant = 'sources'
 }
 
 export default ChatSidebar;
-

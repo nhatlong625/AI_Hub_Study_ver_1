@@ -1,37 +1,32 @@
 import { NavLink } from 'react-router-dom';
-
-const links = [
-  { to: '/', label: 'Home' },
-  { to: '/guide', label: 'Guide' },
-  { to: '/pricing', label: 'Pricing' },
-];
+import logoImg from '../../assets/logos/logo.png';
 
 function PublicNavbar() {
   return (
     <header className="navbar">
       <div className="navbar-inner">
-        <NavLink className="brand" to="/">
-          <span className="brand-mark">AS</span>
-          <span>AI StudyHub</span>
+        <NavLink className="brand" to="/" style={{ display: 'flex', alignItems: 'center' }}>
+          <img
+            src={logoImg}
+            alt="FSTUDY"
+            style={{
+              height: '46px',
+              objectFit: 'contain',
+              mixBlendMode: 'multiply',
+              transition: 'transform 0.2s ease',
+            }}
+            onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          />
         </NavLink>
         <nav className="nav-links">
-          {links.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              className={({ isActive }) => ['nav-link', isActive ? 'active' : ''].join(' ').trim()}
-            >
-              {link.label}
-            </NavLink>
-          ))}
+          <NavLink className="nav-link" to="/">Home</NavLink>
+          <NavLink className="nav-link" to="/guide">Guide</NavLink>
+          <NavLink className="nav-link" to="/pricing">Pricing</NavLink>
         </nav>
         <div className="inline-actions">
-          <NavLink to="/login" className="btn btn-ghost">
-            Log in
-          </NavLink>
-          <NavLink to="/register" className="btn btn-primary">
-            Get started
-          </NavLink>
+          <NavLink className="btn btn-ghost" to="/login">Log in</NavLink>
+          <NavLink className="btn btn-primary" to="/register">Get started</NavLink>
         </div>
       </div>
     </header>

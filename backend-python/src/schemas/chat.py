@@ -1,14 +1,22 @@
-﻿from pydantic import BaseModel, Field
 from typing import List, Optional
+
+from pydantic import BaseModel, Field
+
+
+class ContextDocument(BaseModel):
+    document_id: int
+    document_name: str
+    title: Optional[str] = None
+    subject_id: Optional[int] = None
+    subject_name: Optional[str] = None
+    score: float = 0.0
+    summary_content: str
 
 
 class ChatAskRequest(BaseModel):
-    user_id: int = Field(..., examples=[1])
-    message: str = Field(..., examples=["Interview trong SWR là gì?"])
+    message: str = Field(..., examples=["What is interview in software requirements?"])
     session_id: Optional[int] = Field(default=None, examples=[10])
-    subject_id: Optional[int] = Field(default=None, examples=[2])
-    document_ids: List[int] = Field(default_factory=list, examples=[[1, 2, 3]])
-    top_k: int = Field(default=3, ge=1, le=10)
+    context_documents: List[ContextDocument] = Field(default_factory=list)
 
 
 class SourceDocument(BaseModel):
@@ -32,16 +40,14 @@ class ChatAskResponse(BaseModel):
     detected_subject: Optional[DetectedSubject]
     sources: List[SourceDocument]
     used_mock_ai: bool = False
+    usage: Optional[dict] = None
 
 
-class ChatSessionCreateRequest(BaseModel):
-    user_id: int
-    document_id: Optional[int] = None
-    session_title: str = "New AI Chat"
+class QueryTranslateRequest(BaseModel):
+    message: str
 
 
-class ChatSessionResponse(BaseModel):
-    session_id: int
-    user_id: int
-    document_id: Optional[int] = None
-    session_title: str
+class QueryTranslateResponse(BaseModel):
+    translated_query: str
+    used_mock_ai: bool = False
+    usage: Optional[dict] = None
