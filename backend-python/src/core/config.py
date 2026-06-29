@@ -30,11 +30,6 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_model: str = "gemini-1.5-flash"
 
-    deepseek_api_key: str = ""
-    deepseek_model: str = "deepseek-chat"
-    internal_api_key: str = ""
-    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
-
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
         env_file_encoding="utf-8",
@@ -63,10 +58,6 @@ def get_settings() -> Settings:
         "LLM_PROVIDER": "llm_provider",
         "GEMINI_API_KEY": "gemini_api_key",
         "GEMINI_MODEL": "gemini_model",
-        "DEEPSEEK_API_KEY": "deepseek_api_key",
-        "DEEPSEEK_MODEL": "deepseek_model",
-        "PYTHON_INTERNAL_API_KEY": "internal_api_key",
-        "PYTHON_CORS_ORIGINS": "cors_origins",
     }
     for env_name, field_name in env_to_field.items():
         value = env_values.get(env_name)

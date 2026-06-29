@@ -40,14 +40,3 @@ class ChatAskResponse(BaseModel):
     detected_subject: Optional[DetectedSubject]
     sources: List[SourceDocument]
     used_mock_ai: bool = False
-    usage: Optional[dict] = None
-
-
-class QueryTranslateRequest(BaseModel):
-    message: str
-
-
-class QueryTranslateResponse(BaseModel):
-    translated_query: str
-    used_mock_ai: bool = False
-    usage: Optional[dict] = None

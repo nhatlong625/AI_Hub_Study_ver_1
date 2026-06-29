@@ -1,6 +1,5 @@
 import os
 import re
-from dataclasses import dataclass, field
 from typing import List
 
 import httpx
@@ -11,13 +10,6 @@ from src.prompts.prompt_templates import build_study_answer_prompt
 from src.schemas.chat import ContextDocument
 
 
-@dataclass
-class LlmResult:
-    text: str
-    used_mock_ai: bool = False
-    usage: dict = field(default_factory=dict)
-
-
 class LlmService:
     def __init__(self):
         self.settings = get_settings()
@@ -26,12 +18,10 @@ class LlmService:
 
     def _refresh_runtime_config(self) -> None:
         runtime = get_runtime_ai_config()
-        self.openai_api_key = self._normalize_api_key(runtime.get("openai_api_key") or self.settings.openai_api_key)
+        self.openai_api_key = runtime.get("openai_api_key") or self.settings.openai_api_key
         self.openai_model = runtime.get("openai_model") or self.settings.openai_model
-        self.gemini_api_key = self._normalize_api_key(runtime.get("gemini_api_key") or self.settings.gemini_api_key)
+        self.gemini_api_key = runtime.get("gemini_api_key") or self.settings.gemini_api_key
         self.gemini_model_name = runtime.get("gemini_model") or self.settings.gemini_model
-        self.deepseek_api_key = self._normalize_api_key(runtime.get("deepseek_api_key") or self.settings.deepseek_api_key)
-        self.deepseek_model = runtime.get("deepseek_model") or self.settings.deepseek_model
         self.temperature = self._float_value(runtime.get("temperature"), 0.3)
         self.max_tokens = self._int_value(runtime.get("max_tokens"), 2048)
         self.top_p = self._float_value(runtime.get("top_p"), 1.0)
@@ -50,7 +40,6 @@ class LlmService:
                 provider for provider in configured_order
                 if (provider == "openai" and self.openai_api_key)
                 or (provider == "gemini" and self._has_valid_gemini_key())
-                or (provider == "deepseek" and bool(self.deepseek_api_key))
             ] or ["mock"]
         else:
             requested_provider = (self.settings.llm_provider or "auto").lower()
@@ -62,35 +51,6 @@ class LlmService:
             return float(value) if value not in (None, "") else fallback
         except (TypeError, ValueError):
             return fallback
-
-    def _normalize_api_key(self, value: str | None) -> str:
-        cleaned = str(value or "")
-        for hidden in ("\ufeff", "\u200b", "\u200c", "\u200d"):
-            cleaned = cleaned.replace(hidden, "")
-        cleaned = cleaned.strip()
-        cleaned = re.sub(r"(?i)^Authorization\s*:\s*", "", cleaned).strip()
-        cleaned = re.sub(r"(?i)^Bearer\s+", "", cleaned).strip()
-        if (cleaned.startswith('"') and cleaned.endswith('"')) or (cleaned.startswith("'") and cleaned.endswith("'")):
-            cleaned = cleaned[1:-1].strip()
-        match = re.search(r"(?i)\bbearer\s+(.+)$", cleaned)
-        if match:
-            cleaned = match.group(1).strip()
-        parts = cleaned.split()
-        return parts[0].strip() if parts else ""
-
-    def _safe_connection_debug(self) -> str:
-        key = {
-            "openai": self.openai_api_key,
-            "gemini": self.gemini_api_key,
-            "deepseek": self.deepseek_api_key,
-        }.get(self.provider, "")
-        model = {
-            "openai": self.openai_model,
-            "gemini": self.gemini_model_name,
-            "deepseek": self.deepseek_model,
-        }.get(self.provider, "")
-        suffix = key[-4:] if key else "none"
-        return f"(provider={self.provider}, model={model}, key_len={len(key)}, key_hint=****{suffix})"
 
     def _int_value(self, value, fallback: int) -> int:
         try:
@@ -111,13 +71,8 @@ class LlmService:
             if enabled and provider not in providers:
                 providers.append(provider)
 
-        if requested_provider == "deepseek":
-            add("deepseek", bool(self.deepseek_api_key))
-            add("openai", bool(self.openai_api_key))
+        if requested_provider == "gemini":
             add("gemini", self._has_valid_gemini_key())
-        elif requested_provider == "gemini":
-            add("gemini", self._has_valid_gemini_key())
-            add("deepseek", bool(self.deepseek_api_key))
             add("openai", bool(self.openai_api_key))
         else:
             add("openai", bool(self.openai_api_key))
@@ -138,59 +93,26 @@ class LlmService:
             )
 
         try:
-            result = self._generate_with_failover(prompt)
-            return result.text, False
+            return self._generate_with_failover(prompt), False
         except Exception as exc:
             return self._mock_answer_for_ai_error(str(exc), []), True
 
-    def test_connection(self) -> tuple[bool, str, str]:
-        self._refresh_runtime_config()
-        if self.provider == "mock":
-            return False, self.provider, "No LLM provider API key was provided."
-        try:
-            result = self._generate_with_failover("Reply only with OK.")
-            return True, self.provider, "Connection successful." if result.text else "Connection successful."
-        except Exception as exc:
-            return False, self.provider, f"{self._sanitize_error(str(exc))} {self._safe_connection_debug()}"
-
-    def answer(self, question: str, hits: List[ContextDocument]) -> tuple[str, bool, dict]:
+    def answer(self, question: str, hits: List[ContextDocument]) -> tuple[str, bool]:
         self._refresh_runtime_config()
         if not hits:
-            answer = "I could not find a document summary in the database that matches this question. Please select a more specific subject or upload/summarize a related document first."
-            return answer, False, self._usage(provider="local", model_name="local", prompt=question, answer=answer, estimated=True)
+            return "I could not find a document summary in the database that matches this question. Please select a more specific subject or upload/summarize a related document first.", False
 
         prompt = build_study_answer_prompt(question, hits)
 
         if self.provider == "mock":
-            answer = self._answer_from_database_context(question, hits)
-            return answer, True, self._usage(provider="mock", model_name="mock", prompt=prompt, answer=answer, estimated=True)
+            return self._answer_from_database_context(question, hits), True
 
         try:
-            result = self._generate_with_failover(prompt)
-            return result.text, False, result.usage
+            return self._generate_with_failover(prompt), False
         except Exception as exc:
-            answer = self._answer_from_database_context(question, hits, str(exc))
-            return answer, True, self._usage(provider="local", model_name="database-context", prompt=prompt, answer=answer, estimated=True)
+            return self._answer_from_database_context(question, hits, str(exc)), True
 
-    def translate_query(self, message: str) -> tuple[str, bool, dict]:
-        self._refresh_runtime_config()
-        prompt = (
-            "Translate the student's search query from any language, including Vietnamese or Japanese, "
-            "to concise English keywords for document retrieval. "
-            "Preserve course codes, file names, product names, programming languages, and acronyms exactly. "
-            "Return only the translated query, no explanation.\n\n"
-            f"Query: {message}"
-        )
-        if self.provider == "mock":
-            return message, True, self._usage(provider="mock", model_name="mock", prompt=prompt, answer=message, estimated=True)
-        try:
-            result = self._generate_with_failover(prompt)
-            translated = result.text.strip().strip('"').strip()
-            return translated or message, False, result.usage
-        except Exception:
-            return message, True, self._usage(provider="local", model_name="translation-fallback", prompt=prompt, answer=message, estimated=True)
-
-    def _generate_with_failover(self, prompt: str) -> LlmResult:
+    def _generate_with_failover(self, prompt: str) -> str:
         errors = []
         for provider in self.provider_order:
             if provider == "mock":
@@ -201,8 +123,6 @@ class LlmService:
                     return self._generate_openai(prompt)
                 if provider == "gemini":
                     return self._generate_gemini(prompt)
-                if provider == "deepseek":
-                    return self._generate_deepseek(prompt)
             except Exception as exc:
                 errors.append(f"{self.provider_label(provider)}: {self._sanitize_error(str(exc))}")
 
@@ -211,7 +131,7 @@ class LlmService:
     def _generate_gemini(self, prompt: str) -> str:
         return self._generate_gemini_rest(prompt)
 
-    def _generate_gemini_rest(self, prompt: str) -> LlmResult:
+    def _generate_gemini_rest(self, prompt: str) -> str:
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
         errors = []
 
@@ -229,9 +149,7 @@ class LlmService:
                         candidates = data.get("candidates") or []
                         parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
                         text = "".join(part.get("text", "") for part in parts).strip()
-                        text = text or "Gemini did not return any content."
-                        usage = self._gemini_usage(data.get("usageMetadata"), prompt, text, model)
-                        return LlmResult(text=text, usage=usage)
+                        return text or "Gemini did not return any content."
                     except Exception as exc:
                         errors.append(f"{model}: {self._sanitize_error(str(exc))}")
 
@@ -255,7 +173,7 @@ class LlmService:
         message = re.sub(r"(sk-[A-Za-z0-9_\-]{8})[A-Za-z0-9_\-]+", r"\1***", message)
         return message
 
-    def _generate_openai(self, prompt: str) -> LlmResult:
+    def _generate_openai(self, prompt: str) -> str:
         with httpx.Client(timeout=60, trust_env=False) as client:
             response = client.post(
                 "https://api.openai.com/v1/chat/completions",
@@ -281,80 +199,8 @@ class LlmService:
         payload = response.json()
         choices = payload.get("choices") or []
         if not choices:
-            text = "OpenAI did not return any content."
-        else:
-            text = choices[0].get("message", {}).get("content") or "OpenAI did not return any content."
-        return LlmResult(text=text, usage=self._chat_completion_usage(payload.get("usage"), "openai", self.openai_model, prompt, text))
-
-    def _generate_deepseek(self, prompt: str) -> LlmResult:
-        with httpx.Client(timeout=60, trust_env=False) as client:
-            response = client.post(
-                "https://api.deepseek.com/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {self.deepseek_api_key}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": self.deepseek_model,
-                    "messages": [
-                        {"role": "system", "content": self.system_prompt},
-                        {"role": "user", "content": prompt},
-                    ],
-                    "temperature": self.temperature,
-                    "max_tokens": self.max_tokens,
-                    "top_p": self.top_p,
-                },
-            )
-        response.raise_for_status()
-        payload = response.json()
-        choices = payload.get("choices") or []
-        if not choices:
-            text = "DeepSeek did not return any content."
-        else:
-            text = choices[0].get("message", {}).get("content") or "DeepSeek did not return any content."
-        return LlmResult(text=text, usage=self._chat_completion_usage(payload.get("usage"), "deepseek", self.deepseek_model, prompt, text))
-
-    def _chat_completion_usage(self, usage: dict | None, provider: str, model_name: str, prompt: str, answer: str) -> dict:
-        if usage:
-            return {
-                "provider": provider,
-                "model_name": model_name,
-                "prompt_tokens": usage.get("prompt_tokens"),
-                "completion_tokens": usage.get("completion_tokens"),
-                "total_tokens": usage.get("total_tokens"),
-                "estimated": False,
-            }
-        return self._usage(provider=provider, model_name=model_name, prompt=prompt, answer=answer, estimated=True)
-
-    def _gemini_usage(self, usage: dict | None, prompt: str, answer: str, model_name: str) -> dict:
-        if usage:
-            prompt_tokens = usage.get("promptTokenCount")
-            completion_tokens = usage.get("candidatesTokenCount")
-            total_tokens = usage.get("totalTokenCount")
-            return {
-                "provider": "gemini",
-                "model_name": model_name,
-                "prompt_tokens": prompt_tokens,
-                "completion_tokens": completion_tokens,
-                "total_tokens": total_tokens,
-                "estimated": False,
-            }
-        return self._usage(provider="gemini", model_name=model_name, prompt=prompt, answer=answer, estimated=True)
-
-    def _usage(self, provider: str, model_name: str, prompt: str, answer: str, estimated: bool) -> dict:
-        prompt_tokens = self._estimate_tokens(prompt)
-        completion_tokens = self._estimate_tokens(answer)
-        return {
-            "provider": provider,
-            "model_name": model_name,
-            "prompt_tokens": prompt_tokens,
-            "completion_tokens": completion_tokens,
-            "total_tokens": prompt_tokens + completion_tokens,
-            "estimated": estimated,
-        }
-
-    def _estimate_tokens(self, text: str) -> int:
-        return max(1, round(len(text or "") / 4))
+            return "OpenAI did not return any content."
+        return choices[0].get("message", {}).get("content") or "OpenAI did not return any content."
 
     def _answer_from_database_context(
         self,
@@ -409,8 +255,6 @@ class LlmService:
             return "OpenAI"
         if provider == "gemini":
             return "Gemini"
-        if provider == "deepseek":
-            return "DeepSeek"
         return "LLM"
 
 
