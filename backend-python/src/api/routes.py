@@ -5,8 +5,6 @@ from src.schemas.chat import (
     ChatAskRequest,
     ChatAskResponse,
     DetectedSubject,
-    QueryTranslateRequest,
-    QueryTranslateResponse,
     SourceDocument,
 )
 
@@ -17,7 +15,7 @@ gemini = GeminiService()
 @router.post("/ask", response_model=ChatAskResponse)
 def ask_chatbot(payload: ChatAskRequest):
     hits = payload.context_documents
-    answer, used_mock_ai, usage = gemini.answer(payload.message, hits)
+    answer, used_mock_ai = gemini.answer(payload.message, hits)
 
     detected = None
     if hits:
@@ -40,15 +38,4 @@ def ask_chatbot(payload: ChatAskRequest):
             for hit in hits
         ],
         used_mock_ai=used_mock_ai,
-        usage=usage,
-    )
-
-
-@router.post("/translate-query", response_model=QueryTranslateResponse)
-def translate_query(payload: QueryTranslateRequest):
-    translated_query, used_mock_ai, usage = gemini.translate_query(payload.message)
-    return QueryTranslateResponse(
-        translated_query=translated_query,
-        used_mock_ai=used_mock_ai,
-        usage=usage,
     )

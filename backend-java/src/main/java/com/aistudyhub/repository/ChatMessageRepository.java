@@ -33,18 +33,6 @@ public class ChatMessageRepository {
             """, ROW_MAPPER, sessionId);
     }
 
-    public List<String> findLatestSourcesJsonBySessionId(Integer sessionId) {
-        return jdbc.queryForList("""
-            SELECT TOP 1 sources_json
-            FROM CHAT_MESSAGE
-            WHERE session_id = ?
-              AND session_type = 'assistant'
-              AND sources_json IS NOT NULL
-              AND LTRIM(RTRIM(sources_json)) <> ''
-            ORDER BY created_at DESC, message_id DESC
-            """, String.class, sessionId);
-    }
-
     public void save(Integer sessionId, String role, String content) {
         save(sessionId, role, content, null);
     }

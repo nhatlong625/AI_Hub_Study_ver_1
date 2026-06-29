@@ -1,5 +1,5 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080').replace(/\/api\/?$/, '');
-const REQUEST_TIMEOUT_MS = 30000;
+﻿const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+const REQUEST_TIMEOUT_MS = 15000;
 
 function readStoredUserId() {
   try {
@@ -22,11 +22,9 @@ async function requestJson(path, options = {}) {
   const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const token = localStorage.getItem('token');
     const response = await fetch(`${API_BASE_URL}${path}`, {
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(options.headers || {})
       },
       ...options,
@@ -91,3 +89,5 @@ export function deleteAiChatSession(sessionOrId, userId = getDefaultAiUserId()) 
     })
   });
 }
+
+

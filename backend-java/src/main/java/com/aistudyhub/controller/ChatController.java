@@ -3,7 +3,6 @@ package com.aistudyhub.controller;
 import com.aistudyhub.dto.request.*;
 import com.aistudyhub.dto.response.*;
 import com.aistudyhub.service.ChatService;
-import com.aistudyhub.security.CurrentUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,16 +17,14 @@ import java.util.List;
 public class ChatController {
 
     private final ChatService chatService;
-    private final CurrentUser currentUser;
 
     @GetMapping("/sessions")
     public ResponseEntity<List<ChatSessionDto>> listSessions(@RequestParam Integer userId) {
-        return ResponseEntity.ok(chatService.listSessions(currentUser.id()));
+        return ResponseEntity.ok(chatService.listSessions(userId));
     }
 
     @PostMapping("/sessions")
     public ResponseEntity<ChatSessionDto> createSession(@Valid @RequestBody CreateChatSessionRequest req) {
-        req.setUserId(currentUser.id());
         return ResponseEntity.status(HttpStatus.CREATED).body(chatService.createSession(req));
     }
 
@@ -35,20 +32,19 @@ public class ChatController {
     public ResponseEntity<List<ChatMessageDto>> listMessages(
             @PathVariable Integer sessionId,
             @RequestParam(required = false) Integer userId) {
-        return ResponseEntity.ok(chatService.listMessages(sessionId, currentUser.id()));
+        return ResponseEntity.ok(chatService.listMessages(sessionId, userId));
     }
 
     @DeleteMapping("/sessions/{sessionId}")
     public ResponseEntity<Void> deleteSession(
             @PathVariable Integer sessionId,
             @RequestParam(required = false) Integer userId) {
-        chatService.deleteSession(sessionId, currentUser.id());
+        chatService.deleteSession(sessionId, userId);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/ask")
     public ResponseEntity<ChatAskResponse> ask(@Valid @RequestBody ChatAskRequest req) {
-        req.setUserId(currentUser.id());
         return ResponseEntity.ok(chatService.ask(req));
     }
 }

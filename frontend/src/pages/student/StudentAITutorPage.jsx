@@ -3,51 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import ChatSidebar from '../../components/student/chat/ChatSidebar';
 import ChatInput from '../../components/student/chat/ChatInput';
 import { deleteAiChatSession, getDefaultAiUserId, listAiChatSessions } from '../../services/aiChatService';
-import { documentApi, libraryApi } from '../../services/libraryApi';
-import { mergeLibraryCourses } from '../../utils/libraryCourses';
-
-function getCourseSubjectIds(courses = []) {
-  return courses
-    .flatMap(course => Array.isArray(course.subjectIds) && course.subjectIds.length
-      ? course.subjectIds
-      : [course.subjectId ?? course.id])
-    .map(Number)
-    .filter(Number.isFinite);
-}
-
-function filterDocumentsBySubjectIds(documents = [], subjectIds = []) {
-  const subjectIdSet = new Set(subjectIds.map(Number).filter(Number.isFinite));
-  if (subjectIdSet.size === 0) return [];
-  return documents.filter(document => subjectIdSet.has(Number(document.subjectId ?? document.subject_id)));
-}
-
-function getCourseDocuments(courses = []) {
-  return mergeDocuments(...courses.map(course => {
-    const subjectId = course.subjectId ?? course.id;
-    return Array.isArray(course.documents)
-      ? course.documents.map(document => ({
-          ...document,
-          subjectId: document.subjectId ?? document.subject_id ?? subjectId
-        }))
-      : [];
-  }));
-}
-
-function mergeDocuments(...documentLists) {
-  const documentsById = new Map();
-  documentLists.flat().forEach(doc => {
-    const documentId = Number(doc?.documentId ?? doc?.document_id ?? doc?.id);
-    if (Number.isFinite(documentId)) {
-      documentsById.set(documentId, {
-        ...doc,
-        documentId,
-        subjectId: doc.subjectId ?? doc.subject_id ?? doc.documentSubjectId ?? doc.document_subject_id,
-        documentName: doc.documentName ?? doc.document_name ?? doc.name ?? doc.fileName
-      });
-    }
-  });
-  return [...documentsById.values()];
-}
+import { semesterApi } from '../../services/libraryApi';
 
 function mapBackendSessionToThread(session) {
   const id = session?.sessionId ?? session?.session_id;
@@ -68,11 +24,6 @@ function StudentAITutorPage() {
   const [recentError, setRecentError] = useState('');
   const [libraryCourses, setLibraryCourses] = useState([]);
   const [libraryCoursesError, setLibraryCoursesError] = useState('');
-  const [libraryDocuments, setLibraryDocuments] = useState([]);
-  const [selectedSubjectDocuments, setSelectedSubjectDocuments] = useState([]);
-  const [libraryDocumentsLoading, setLibraryDocumentsLoading] = useState(false);
-  const [libraryDocumentsError, setLibraryDocumentsError] = useState('');
-  const [selectedDocuments, setSelectedDocuments] = useState([]);
   const refreshRecentThreads = useCallback(() => {
     listAiChatSessions(getDefaultAiUserId())
       .then(sessions => {
@@ -92,127 +43,28 @@ function StudentAITutorPage() {
   }, [refreshRecentThreads]);
 
   useEffect(() => {
-    libraryApi.getOverview(getDefaultAiUserId())
-      .then(overview => {
-        const semesters = Array.isArray(overview?.semesters) ? overview.semesters : [];
-        const courses = semesters.flatMap(semester => {
+    semesterApi.getAll()
+      .then(semesters => {
+        const courses = Array.isArray(semesters)
+          ? semesters.flatMap(semester => {
               const subjects = Array.isArray(semester.subjects) ? semester.subjects : [];
-              return subjects
-                .map(subject => {
-                  const documents = Array.isArray(subject.documents) ? subject.documents : [];
-                  const documentCount = Math.max(Number(subject.documentCount || 0), documents.length);
-                  return {
-                    id: subject.subjectId,
-                    subjectId: subject.subjectId,
-                    code: subject.subjectCode || subject.subjectName,
-                    name: subject.subjectName,
-                    semester: semester.semesterName,
-                    documentCount,
-                    documents
-                  };
-                })
-                .filter(subject => subject.documentCount > 0);
-            });
+              return subjects.map(subject => ({
+                id: subject.subjectId,
+                subjectId: subject.subjectId,
+                code: subject.subjectCode || subject.subjectName,
+                name: subject.subjectName,
+                semester: semester.semesterName,
+              }));
+            })
+          : [];
         setLibraryCoursesError('');
-        setLibraryCourses(mergeLibraryCourses(courses));
+        setLibraryCourses(courses);
       })
       .catch(error => {
         setLibraryCourses([]);
         setLibraryCoursesError(error?.message || 'Cannot load subjects from library.');
       });
   }, []);
-
-  useEffect(() => {
-    const userId = getDefaultAiUserId();
-    Promise.all([
-      documentApi.getByUser(userId).catch(() => []),
-      documentApi.getSharedWithMe(userId).catch(() => [])
-    ])
-      .then(([ownDocuments, sharedDocuments]) => {
-        const normalizedShared = (Array.isArray(sharedDocuments) ? sharedDocuments : []).map(item => ({
-          ...item,
-          documentId: item.documentId,
-          subjectId: item.subjectId ?? item.subject_id ?? item.documentSubjectId ?? item.document_subject_id,
-          documentName: item.documentName,
-          title: item.documentTitle || item.title || item.documentName
-        }));
-        setLibraryDocuments(mergeDocuments(
-          Array.isArray(ownDocuments) ? ownDocuments : [],
-          normalizedShared
-        ));
-      })
-      .catch(() => {
-        setLibraryDocuments([]);
-      });
-  }, []);
-
-  useEffect(() => {
-    const subjectIds = getCourseSubjectIds(selectedCourses);
-    if (subjectIds.length === 0) {
-      setSelectedSubjectDocuments([]);
-      setLibraryDocumentsLoading(false);
-      setLibraryDocumentsError('');
-      return;
-    }
-
-    let cancelled = false;
-    const embeddedCourseDocuments = getCourseDocuments(selectedCourses);
-    setSelectedSubjectDocuments(mergeDocuments(
-      embeddedCourseDocuments,
-      filterDocumentsBySubjectIds(libraryDocuments, subjectIds)
-    ));
-    setLibraryDocumentsLoading(true);
-    setLibraryDocumentsError('');
-
-    const userId = getDefaultAiUserId();
-    Promise.all([
-      documentApi.getByUser(userId).catch(error => ({ error })),
-      documentApi.getSharedWithMe(userId).catch(() => []),
-      ...subjectIds.map(subjectId => documentApi.getBySubject(subjectId).catch(error => ({ error })))
-    ])
-      .then(([ownDocumentsResult, sharedDocumentsResult, ...subjectResults]) => {
-        if (cancelled) return;
-        const results = [ownDocumentsResult, sharedDocumentsResult, ...subjectResults];
-        const failed = results.find(result => result && !Array.isArray(result) && result.error);
-        const ownSubjectDocuments = Array.isArray(ownDocumentsResult)
-          ? filterDocumentsBySubjectIds(ownDocumentsResult, subjectIds)
-          : [];
-        const sharedSubjectDocuments = Array.isArray(sharedDocumentsResult)
-          ? filterDocumentsBySubjectIds(sharedDocumentsResult, subjectIds)
-          : [];
-        const subjectDocuments = subjectResults.flatMap(result => Array.isArray(result) ? result : []);
-        const nextSubjectDocuments = mergeDocuments(
-          embeddedCourseDocuments,
-          ownSubjectDocuments,
-          sharedSubjectDocuments,
-          subjectDocuments
-        );
-        setSelectedSubjectDocuments(nextSubjectDocuments);
-        setLibraryDocuments(prev => mergeDocuments(prev, nextSubjectDocuments));
-        setLibraryDocumentsError(failed ? 'Could not load some documents for the selected subject.' : '');
-      })
-      .catch(error => {
-        if (cancelled) return;
-        setLibraryDocumentsError(error?.message || 'Could not load documents for the selected subject.');
-      })
-      .finally(() => {
-        if (!cancelled) setLibraryDocumentsLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedCourses]);
-
-  useEffect(() => {
-    const subjectIds = getCourseSubjectIds(selectedCourses);
-    if (subjectIds.length === 0) return;
-
-    const knownSubjectDocuments = filterDocumentsBySubjectIds(libraryDocuments, subjectIds);
-    if (knownSubjectDocuments.length > 0) {
-      setSelectedSubjectDocuments(prev => mergeDocuments(prev, knownSubjectDocuments));
-    }
-  }, [libraryDocuments, selectedCourses]);
 
   const handleDeleteThread = useCallback((thread) => {
     if (!thread?.id) return;
@@ -270,7 +122,7 @@ function StudentAITutorPage() {
 
   const handleSendMessage = (text) => {
     navigate('/student/ai-tutor/chat', {
-      state: { initialMessage: text, selectedCourses, selectedDocuments }
+      state: { initialMessage: text, selectedCourses }
     });
   };
 
@@ -281,31 +133,7 @@ function StudentAITutorPage() {
   };
 
   const handleRemoveCourse = (courseCode) => {
-    setSelectedCourses(prev => {
-      const removedCourse = prev.find(course => course.code === courseCode);
-      const nextCourses = prev.filter(course => course.code !== courseCode);
-      if (removedCourse) {
-        const removedSubjectIds = (Array.isArray(removedCourse.subjectIds) && removedCourse.subjectIds.length
-          ? removedCourse.subjectIds
-          : [removedCourse.subjectId ?? removedCourse.id]).map(Number);
-        setSelectedDocuments(documents => documents.filter(document => (
-          !removedSubjectIds.includes(Number(document.subjectId ?? document.subject_id))
-        )));
-      }
-      return nextCourses;
-    });
-  };
-
-  const handleAddDocument = (document) => {
-    const documentId = Number(document.documentId ?? document.document_id);
-    if (!Number.isFinite(documentId)) return;
-    setSelectedDocuments(prev => (
-      prev.some(item => Number(item.documentId ?? item.document_id) === documentId) ? prev : [document]
-    ));
-  };
-
-  const handleRemoveDocument = (documentId) => {
-    setSelectedDocuments(prev => prev.filter(document => Number(document.documentId ?? document.document_id) !== Number(documentId)));
+    setSelectedCourses(prev => prev.filter(course => course.code !== courseCode));
   };
 
   return (
@@ -383,16 +211,10 @@ function StudentAITutorPage() {
         <ChatInput
           onSendMessage={handleSendMessage}
           selectedCourses={selectedCourses}
-          selectedDocuments={selectedDocuments}
           onAddCourse={handleAddCourse}
           onRemoveCourse={handleRemoveCourse}
-          onAddDocument={handleAddDocument}
-          onRemoveDocument={handleRemoveDocument}
           libraryCourses={libraryCourses}
-          libraryDocuments={selectedSubjectDocuments}
           libraryCoursesError={libraryCoursesError}
-          libraryDocumentsLoading={libraryDocumentsLoading}
-          libraryDocumentsError={libraryDocumentsError}
         />
       </div>
     </div>

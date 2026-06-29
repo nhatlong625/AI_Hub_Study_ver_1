@@ -70,13 +70,6 @@ public class ChatSessionRepository {
         jdbc.update("UPDATE CHAT_SESSION SET updated_at = ? WHERE session_id = ?", LocalDateTime.now(), sessionId);
     }
 
-    public void updateDocumentId(Integer sessionId, Integer documentId) {
-        jdbc.update(
-                "UPDATE CHAT_SESSION SET document_id = ?, updated_at = ? WHERE session_id = ?",
-                documentId, LocalDateTime.now(), sessionId
-        );
-    }
-
     public int deleteById(Integer sessionId) {
         return jdbc.update("DELETE FROM CHAT_SESSION WHERE session_id = ?", sessionId);
     }
