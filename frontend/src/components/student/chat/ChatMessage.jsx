@@ -60,7 +60,7 @@ function renderTextLine(line, key, isFirstLine) {
   );
 }
 
-export function renderMessageContent(content) {
+function renderMessageContent(content) {
   const parts = String(content).split(/```(\w+)?\n?([\s\S]*?)```/g);
 
   return parts.map((part, index) => {
