@@ -1,123 +1,400 @@
-import { NavLink } from 'react-router-dom';
-import logoImg from '../../assets/images/logo.jpg';
+import { NavLink, useLocation } from "react-router-dom";
+import logoImg from "../../assets/logos/logo.png";
+import logoIcon from "../../assets/logos/logo-icon.png";
+import { useSidebarContext } from "../../hooks/useSidebar";
 
-const items = [
+const NAV_ITEMS = [
   {
-    slug: 'dashboard',
-    label: 'Home',
+    slug: "dashboard",
+    label: "Home",
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="17" viewBox="0 0 15 17" fill="none" aria-hidden="true">
-        <path d="M1.83333 14.6667H4.58333V9.16667H10.0833V14.6667H12.8333V6.41667L7.33333 2.29167L1.83333 6.41667V14.6667ZM0 16.5V5.5L7.33333 0L14.6667 5.5V16.5H8.25V11H6.41667V16.5H0Z" fill="currentColor"/>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
       </svg>
     ),
   },
   {
-    slug: 'users',
-    label: 'User Management',
+    slug: "users",
+    label: "User Management",
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="21" height="15" viewBox="0 0 21 15" fill="none" aria-hidden="true">
-        <path d="M0 14.6667V12.1C0 11.5806 0.133681 11.1031 0.401042 10.6677C0.668403 10.2323 1.02361 9.9 1.46667 9.67083C2.41389 9.19722 3.37639 8.84201 4.35417 8.60521C5.33194 8.3684 6.325 8.25 7.33333 8.25C8.34167 8.25 9.33472 8.3684 10.3125 8.60521C11.2903 8.84201 12.2528 9.19722 13.2 9.67083C13.6431 9.9 13.9983 10.2323 14.2656 10.6677C14.533 11.1031 14.6667 11.5806 14.6667 12.1V14.6667H0ZM16.5 14.6667V11.9167C16.5 11.2444 16.3128 10.599 15.9385 9.98021C15.5642 9.36146 15.0333 8.83055 14.3458 8.3875C15.125 8.47917 15.8583 8.63576 16.5458 8.85729C17.2333 9.07882 17.875 9.35 18.4708 9.67083C19.0208 9.97639 19.441 10.3163 19.7313 10.6906C20.0215 11.0649 20.1667 11.4736 20.1667 11.9167V14.6667H16.5ZM7.33333 7.33333C6.325 7.33333 5.46181 6.97431 4.74375 6.25625C4.02569 5.53819 3.66667 4.675 3.66667 3.66667C3.66667 2.65833 4.02569 1.79514 4.74375 1.07708C5.46181 0.359028 6.325 0 7.33333 0C8.34167 0 9.20486 0.359028 9.92292 1.07708C10.641 1.79514 11 2.65833 11 3.66667C11 4.675 10.641 5.53819 9.92292 6.25625C9.20486 6.97431 8.34167 7.33333 7.33333 7.33333ZM16.5 3.66667C16.5 4.675 16.141 5.53819 15.4229 6.25625C14.7049 6.97431 13.8417 7.33333 12.8333 7.33333C12.6653 7.33333 12.4514 7.31424 12.1917 7.27604C11.9319 7.23785 11.7181 7.19583 11.55 7.15C11.9625 6.66111 12.2795 6.11875 12.501 5.52292C12.7226 4.92708 12.8333 4.30833 12.8333 3.66667C12.8333 3.025 12.7226 2.40625 12.501 1.81042C12.2795 1.21458 11.9625 0.672222 11.55 0.183333C11.7639 0.106944 11.9778 0.0572917 12.1917 0.034375C12.4056 0.0114583 12.6194 0 12.8333 0C13.8417 0 14.7049 0.359028 15.4229 1.07708C16.141 1.79514 16.5 2.65833 16.5 3.66667ZM1.83333 12.8333H12.8333V12.1C12.8333 11.9319 12.7913 11.7792 12.7073 11.6417C12.6233 11.5042 12.5125 11.3972 12.375 11.3208C11.55 10.9083 10.7174 10.599 9.87708 10.3927C9.03681 10.1865 8.18889 10.0833 7.33333 10.0833C6.47778 10.0833 5.62986 10.1865 4.78958 10.3927C3.94931 10.599 3.11667 10.9083 2.29167 11.3208C2.15417 11.3972 2.0434 11.5042 1.95938 11.6417C1.87535 11.7792 1.83333 11.9319 1.83333 12.1V12.8333ZM7.33333 5.5C7.8375 5.5 8.2691 5.32049 8.62813 4.96146C8.98715 4.60243 9.16667 4.17083 9.16667 3.66667C9.16667 3.1625 8.98715 2.7309 8.62813 2.37188C8.2691 2.01285 7.8375 1.83333 7.33333 1.83333C6.82917 1.83333 6.39757 2.01285 6.03854 2.37188C5.67951 2.7309 5.5 3.1625 5.5 3.66667C5.5 4.17083 5.67951 4.60243 6.03854 4.96146C6.39757 5.32049 6.82917 5.5 7.33333 5.5Z" fill="currentColor"/>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
       </svg>
     ),
   },
   {
-    slug: 'library',
-    label: 'Library Management',
+    slug: "library",
+    label: "Library Management",
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 19 19" fill="none" aria-hidden="true">
-        <path d="M5.5 12.8333H16.5V1.83333H14.6667V8.25L12.375 6.875L10.0833 8.25V1.83333H5.5V12.8333ZM5.5 14.6667C4.99583 14.6667 4.56424 14.4872 4.20521 14.1281C3.84618 13.7691 3.66667 13.3375 3.66667 12.8333V1.83333C3.66667 1.32917 3.84618 0.897569 4.20521 0.538542C4.56424 0.179514 4.99583 0 5.5 0H16.5C17.0042 0 17.4358 0.179514 17.7948 0.538542C18.1538 0.897569 18.3333 1.32917 18.3333 1.83333V12.8333C18.3333 13.3375 18.1538 13.7691 17.7948 14.1281C17.4358 14.4872 17.0042 14.6667 16.5 14.6667H5.5ZM1.83333 18.3333C1.32917 18.3333 0.897569 18.1538 0.538542 17.7948C0.179514 17.4358 0 17.0042 0 16.5V3.66667H1.83333V16.5H14.6667V18.3333H1.83333ZM10.0833 1.83333H12.375H14.6667H10.0833ZM5.5 1.83333H10.0833H12.375H14.6667H16.5H5.5Z" fill="currentColor"/>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
       </svg>
     ),
   },
   {
-    slug: 'practice-tests',
-    label: 'Practice Test Management',
+    slug: "practice-tests",
+    label: "Practice Tests",
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 19 19" fill="none" aria-hidden="true">
-        <path d="M11 11.9167C11.2597 11.9167 11.4851 11.8212 11.676 11.6302C11.867 11.4392 11.9625 11.2139 11.9625 10.9542C11.9625 10.6944 11.867 10.4691 11.676 10.2781C11.4851 10.0872 11.2597 9.99167 11 9.99167C10.7403 9.99167 10.5149 10.0872 10.324 10.2781C10.133 10.4691 10.0375 10.6944 10.0375 10.9542C10.0375 11.2139 10.133 11.4392 10.324 11.6302C10.5149 11.8212 10.7403 11.9167 11 11.9167ZM10.3125 8.98333H11.6875C11.6875 8.54028 11.7333 8.21562 11.825 8.00937C11.9167 7.80312 12.1306 7.53194 12.4667 7.19583C12.925 6.7375 13.2306 6.36701 13.3833 6.08437C13.5361 5.80174 13.6125 5.46944 13.6125 5.0875C13.6125 4.4 13.3719 3.83854 12.8906 3.40313C12.4094 2.96771 11.7792 2.75 11 2.75C10.3736 2.75 9.82743 2.92569 9.36146 3.27708C8.89549 3.62847 8.57083 4.09444 8.3875 4.675L9.625 5.17917C9.7625 4.79722 9.94965 4.51076 10.1865 4.31979C10.4233 4.12882 10.6944 4.03333 11 4.03333C11.3667 4.03333 11.6646 4.13646 11.8938 4.34271C12.1229 4.54896 12.2375 4.82778 12.2375 5.17917C12.2375 5.39306 12.1764 5.59549 12.0542 5.78646C11.9319 5.97743 11.7181 6.21806 11.4125 6.50833C10.9083 6.95139 10.599 7.29896 10.4844 7.55104C10.3698 7.80312 10.3125 8.28056 10.3125 8.98333ZM5.5 14.6667C4.99583 14.6667 4.56424 14.4872 4.20521 14.1281C3.84618 13.7691 3.66667 13.3375 3.66667 12.8333V1.83333C3.66667 1.32917 3.84618 0.897569 4.20521 0.538542C4.56424 0.179514 4.99583 0 5.5 0H16.5C17.0042 0 17.4358 0.179514 17.7948 0.538542C18.1538 0.897569 18.3333 1.32917 18.3333 1.83333V12.8333C18.3333 13.3375 18.1538 13.7691 17.7948 14.1281C17.4358 14.4872 17.0042 14.6667 16.5 14.6667H5.5ZM5.5 12.8333H16.5V1.83333H5.5V12.8333ZM1.83333 18.3333C1.32917 18.3333 0.897569 18.1538 0.538542 17.7948C0.179514 17.4358 0 17.0042 0 16.5V3.66667H1.83333V16.5H14.6667V18.3333H1.83333ZM5.5 1.83333V12.8333V1.83333Z" fill="currentColor"/>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+        <rect x="8" y="2" width="8" height="4" rx="1" />
+        <path d="M9 14h6" />
+        <path d="M9 18h6" />
+        <path d="M9 10h.01" />
       </svg>
     ),
   },
   {
-    slug: 'documents',
-    label: 'Document Management',
+    slug: "documents",
+    label: "Document Management",
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="19" viewBox="0 0 15 19" fill="none" aria-hidden="true">
-        <path d="M3.66667 14.6667H11V12.8333H3.66667V14.6667ZM3.66667 11H11V9.16667H3.66667V11ZM1.83333 18.3333C1.32917 18.3333 0.897569 18.1538 0.538542 17.7948C0.179514 17.4358 0 17.0042 0 16.5V1.83333C0 1.32917 0.179514 0.897569 0.538542 0.538542C0.897569 0.179514 1.32917 0 1.83333 0H9.16667L14.6667 5.5V16.5C14.6667 17.0042 14.4872 17.4358 14.1281 17.7948C13.7691 18.1538 13.3375 18.3333 12.8333 18.3333H1.83333ZM8.25 6.41667V1.83333H1.83333V16.5H12.8333V6.41667H8.25ZM1.83333 1.83333V6.41667V1.83333V6.41667V16.5V1.83333Z" fill="currentColor"/>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="16" y1="13" x2="8" y2="13" />
+        <line x1="16" y1="17" x2="8" y2="17" />
+        <polyline points="10 9 9 9 8 9" />
       </svg>
     ),
   },
   {
-    slug: 'payments',
-    label: 'Payment',
+    slug: "payments",
+    label: "Payment",
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="21" height="15" viewBox="0 0 21 15" fill="none" aria-hidden="true">
-        <path d="M11.9167 8.25C11.1528 8.25 10.5035 7.98264 9.96875 7.44792C9.43403 6.91319 9.16667 6.26389 9.16667 5.5C9.16667 4.73611 9.43403 4.08681 9.96875 3.55208C10.5035 3.01736 11.1528 2.75 11.9167 2.75C12.6806 2.75 13.3299 3.01736 13.8646 3.55208C14.3993 4.08681 14.6667 4.73611 14.6667 5.5C14.6667 6.26389 14.3993 6.91319 13.8646 7.44792C13.3299 7.98264 12.6806 8.25 11.9167 8.25ZM5.5 11C4.99583 11 4.56424 10.8205 4.20521 10.4615C3.84618 10.1024 3.66667 9.67083 3.66667 9.16667V1.83333C3.66667 1.32917 3.84618 0.897569 4.20521 0.538542C4.56424 0.179514 4.99583 0 5.5 0H18.3333C18.8375 0 19.2691 0.179514 19.6281 0.538542C19.9872 0.897569 20.1667 1.32917 20.1667 1.83333V9.16667C20.1667 9.67083 19.9872 10.1024 19.6281 10.4615C19.2691 10.8205 18.8375 11 18.3333 11H5.5ZM7.33333 9.16667H16.5C16.5 8.6625 16.6795 8.2309 17.0385 7.87187C17.3976 7.51285 17.8292 7.33333 18.3333 7.33333V3.66667C17.8292 3.66667 17.3976 3.48715 17.0385 3.12812C16.6795 2.7691 16.5 2.3375 16.5 1.83333H7.33333C7.33333 2.3375 7.15382 2.7691 6.79479 3.12812C6.43576 3.48715 6.00417 3.66667 5.5 3.66667V7.33333C6.00417 7.33333 6.43576 7.51285 6.79479 7.87187C7.15382 8.2309 7.33333 8.6625 7.33333 9.16667ZM17.4167 14.6667H1.83333C1.32917 14.6667 0.897569 14.4872 0.538542 14.1281C0.179514 13.7691 0 13.3375 0 12.8333V2.75H1.83333V12.8333H17.4167V14.6667ZM5.5 9.16667V1.83333V9.16667Z" fill="currentColor"/>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+        <line x1="1" y1="10" x2="23" y2="10" />
       </svg>
     ),
   },
   {
-    slug: 'settings',
-    label: 'Admin Settings',
+    slug: "plans",
+    label: "Plan Management",
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 19 19" fill="none" aria-hidden="true">
-        <path d="M6.69167 18.3333L6.325 15.4C6.12639 15.3236 5.93924 15.2319 5.76354 15.125C5.58785 15.0181 5.41597 14.9035 5.24792 14.7812L2.52083 15.9271L0 11.5729L2.36042 9.78542C2.34514 9.67847 2.3375 9.57535 2.3375 9.47604C2.3375 9.37674 2.3375 9.27361 2.3375 9.16667C2.3375 9.05972 2.3375 8.9566 2.3375 8.85729C2.3375 8.75799 2.34514 8.65486 2.36042 8.54792L0 6.76042L2.52083 2.40625L5.24792 3.55208C5.41597 3.42986 5.59167 3.31528 5.775 3.20833C5.95833 3.10139 6.14167 3.00972 6.325 2.93333L6.69167 0H11.7333L12.1 2.93333C12.2986 3.00972 12.4858 3.10139 12.6615 3.20833C12.8372 3.31528 13.009 3.42986 13.1771 3.55208L15.9042 2.40625L18.425 6.76042L16.0646 8.54792C16.0799 8.65486 16.0875 8.75799 16.0875 8.85729C16.0875 8.9566 16.0875 9.05972 16.0875 9.16667C16.0875 9.27361 16.0875 9.37674 16.0875 9.47604C16.0875 9.57535 16.0722 9.67847 16.0417 9.78542L18.4021 11.5729L15.8813 15.9271L13.1771 14.7812C13.009 14.9035 12.8333 15.0181 12.65 15.125C12.4667 15.2319 12.2833 15.3236 12.1 15.4L11.7333 18.3333H6.69167ZM8.29583 16.5H10.1062L10.4271 14.0708C10.9007 13.9486 11.3399 13.7691 11.7448 13.5323C12.1497 13.2955 12.5201 13.009 12.8562 12.6729L15.125 13.6125L16.0187 12.0542L14.0479 10.5646C14.1243 10.3507 14.1778 10.1253 14.2083 9.88854C14.2389 9.65174 14.2542 9.41111 14.2542 9.16667C14.2542 8.92222 14.2389 8.6816 14.2083 8.44479C14.1778 8.20799 14.1243 7.98264 14.0479 7.76875L16.0187 6.27917L15.125 4.72083L12.8562 5.68333C12.5201 5.33194 12.1497 5.03785 11.7448 4.80104C11.3399 4.56424 10.9007 4.38472 10.4271 4.2625L10.1292 1.83333H8.31875L7.99792 4.2625C7.52431 4.38472 7.08507 4.56424 6.68021 4.80104C6.27535 5.03785 5.90486 5.32431 5.56875 5.66042L3.3 4.72083L2.40625 6.27917L4.37708 7.74583C4.30069 7.975 4.24722 8.20417 4.21667 8.43333C4.18611 8.6625 4.17083 8.90694 4.17083 9.16667C4.17083 9.41111 4.18611 9.64792 4.21667 9.87708C4.24722 10.1063 4.30069 10.3354 4.37708 10.5646L2.40625 12.0542L3.3 13.6125L5.56875 12.65C5.90486 13.0014 6.27535 13.2955 6.68021 13.5323C7.08507 13.7691 7.52431 13.9486 7.99792 14.0708L8.29583 16.5ZM9.25833 12.375C10.1444 12.375 10.9007 12.0618 11.5271 11.4354C12.1535 10.809 12.4667 10.0528 12.4667 9.16667C12.4667 8.28056 12.1535 7.52431 11.5271 6.89792C10.9007 6.27153 10.1444 5.95833 9.25833 5.95833C8.35694 5.95833 7.59688 6.27153 6.97813 6.89792C6.35938 7.52431 6.05 8.28056 6.05 9.16667C6.05 10.0528 6.35938 10.809 6.97813 11.4354C7.59688 12.0618 8.35694 12.375 9.25833 12.375Z" fill="currentColor"/>
-      </svg>
-    ),
-  },
-];
-
-const footerItems = [
-  {
-    label: 'Support',
-    className: 'admin-sidebar-footer-link',
-    icon: (
-      <svg viewBox="0 0 16 19" fill="none" aria-hidden="true">
-        <path d="M8.25 18.3333L8.02083 15.5833H7.79167C5.62222 15.5833 3.78125 14.8271 2.26875 13.3146C0.75625 11.8021 0 9.96111 0 7.79167C0 5.62222 0.75625 3.78125 2.26875 2.26875C3.78125 0.75625 5.62222 0 7.79167 0C8.87639 0 9.88854 0.202431 10.8281 0.607292C11.7677 1.01215 12.5927 1.56979 13.3031 2.28021C14.0135 2.99062 14.5712 3.81563 14.976 4.75521C15.3809 5.69479 15.5833 6.70694 15.5833 7.79167C15.5833 8.9375 15.3962 10.0375 15.0219 11.0917C14.6476 12.1458 14.1358 13.1236 13.4865 14.025C12.8372 14.9264 12.0656 15.7437 11.1719 16.4771C10.2781 17.2104 9.30417 17.8292 8.25 18.3333ZM10.0833 14.9875C11.1681 14.0708 12.0503 12.9976 12.7302 11.7677C13.4101 10.5378 13.75 9.2125 13.75 7.79167C13.75 6.12639 13.1733 4.71701 12.0198 3.56354C10.8663 2.41007 9.45694 1.83333 7.79167 1.83333C6.12639 1.83333 4.71701 2.41007 3.56354 3.56354C2.41007 4.71701 1.83333 6.12639 1.83333 7.79167C1.83333 9.45694 2.41007 10.8663 3.56354 12.0198C4.71701 13.1733 6.12639 13.75 7.79167 13.75H10.0833V14.9875ZM7.76875 12.8104C8.02847 12.8104 8.25 12.7188 8.43333 12.5354C8.61667 12.3521 8.70833 12.1306 8.70833 11.8708C8.70833 11.6111 8.61667 11.3896 8.43333 11.2063C8.25 11.0229 8.02847 10.9312 7.76875 10.9312C7.50903 10.9312 7.2875 11.0229 7.10417 11.2063C6.92083 11.3896 6.82917 11.6111 6.82917 11.8708C6.82917 12.1306 6.92083 12.3521 7.10417 12.5354C7.2875 12.7188 7.50903 12.8104 7.76875 12.8104ZM7.10417 9.9H8.47917C8.47917 9.44167 8.525 9.12083 8.61667 8.9375C8.70833 8.75417 8.99861 8.41806 9.4875 7.92917C9.7625 7.65417 9.99167 7.35625 10.175 7.03542C10.3583 6.71458 10.45 6.37083 10.45 6.00417C10.45 5.225 10.1865 4.64062 9.65938 4.25104C9.13229 3.86146 8.50972 3.66667 7.79167 3.66667C7.11944 3.66667 6.55417 3.85382 6.09583 4.22813C5.6375 4.60243 5.31667 5.05694 5.13333 5.59167L6.41667 6.09583C6.49306 5.83611 6.63819 5.58021 6.85208 5.32812C7.06597 5.07604 7.37917 4.95 7.79167 4.95C8.20417 4.95 8.51354 5.06458 8.71979 5.29375C8.92604 5.52292 9.02917 5.775 9.02917 6.05C9.02917 6.05 8.95278 6.54271 8.8 6.74896C8.64722 6.95521 8.46389 7.16528 8.25 7.37917C7.71528 7.8375 7.39062 8.20035 7.27604 8.46771C7.16146 8.73507 7.10417 9.2125 7.10417 9.9Z" fill="currentColor"/>
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 12V8H4v8h8" /><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M16 16h6M19 13v6" />
       </svg>
     ),
   },
   {
-    label: 'Log Out',
-    className: 'admin-sidebar-footer-link admin-sidebar-logout',
+    slug: "settings",
+    label: "Admin Settings",
     icon: (
-      <svg viewBox="0 0 17 17" fill="none" aria-hidden="true">
-        <path d="M1.83333 16.5C1.32917 16.5 0.897569 16.3205 0.538542 15.9615C0.179514 15.6024 0 15.1708 0 14.6667V1.83333C0 1.32917 0.179514 0.897569 0.538542 0.538542C0.897569 0.179514 1.32917 0 1.83333 0H8.25V1.83333H1.83333V14.6667H8.25V16.5H1.83333ZM11.9167 12.8333L10.6562 11.5042L12.9937 9.16667H5.5V7.33333H12.9937L10.6562 4.99583L11.9167 3.66667L16.5 8.25L11.9167 12.8333Z" fill="currentColor"/>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
       </svg>
     ),
   },
 ];
 
 function AdminSidebar() {
-  return (
-    <aside className="dashboard-sidebar admin-sidebar">
-      <div className="admin-sidebar-shell">
-        <div className="admin-sidebar-brand">
-          <span className="admin-sidebar-brand-mark">
-            <img src={logoImg} alt="StudyHub Logo" className="admin-brand-logo" />
-          </span>
-        </div>
+  const { collapsed, toggle } = useSidebarContext();
+  const location = useLocation();
 
-        <nav className="sidebar-menu admin-sidebar-menu">
-          {items.map((item) => (
+  return (
+    <aside
+      style={{
+        width: "100%",
+        height: "100%",
+        background: "#ffffff",
+        borderRight: "1px solid #f1eff5",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
+      {/* Logo */}
+      <div
+        style={{
+          padding: collapsed ? "12px 4px 16px" : "8px 16px 20px",
+          display: "flex",
+          justifyContent: collapsed ? "center" : "flex-start",
+        }}
+      >
+        <NavLink
+          to="/admin/dashboard"
+          aria-label="Go to Admin Dashboard"
+          title="Home"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            textDecoration: "none",
+            cursor: "pointer",
+          }}
+        >
+          {collapsed ? (
+            <img
+              src={logoIcon}
+              alt="F"
+              style={{ height: "48px", width: "48px", objectFit: "contain" }}
+            />
+          ) : (
+            <img
+              src={logoImg}
+              alt="StudyHub"
+              style={{ height: "52px", objectFit: "contain" }}
+            />
+          )}
+        </NavLink>
+      </div>
+
+      {/* Label + Toggle */}
+      <div
+        style={{
+          padding: "0 16px 8px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        {!collapsed && (
+          <span
+            style={{
+              fontSize: "12px",
+              fontWeight: "800",
+              color: "#6366f1",
+              letterSpacing: "1.5px",
+              textTransform: "uppercase",
+            }}
+          >
+            Admin
+          </span>
+        )}
+        <button
+          onClick={toggle}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: "4px",
+            borderRadius: "6px",
+            color: "#4f46e5",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginLeft: collapsed ? "auto" : "0",
+            marginRight: collapsed ? "auto" : "0",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#ede9fe")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <line x1="9" y1="3" x2="9" y2="21" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Nav */}
+      <nav
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "2px",
+          padding: "0 8px",
+        }}
+      >
+        {NAV_ITEMS.map((item) => {
+          const isActive =
+            location.pathname === "/admin/" + item.slug ||
+            location.pathname.startsWith("/admin/" + item.slug + "/");
+          return (
             <NavLink
               key={item.slug}
-              to={'/admin/' + item.slug}
-              className={({ isActive }) => ['sidebar-link', 'admin-sidebar-link', isActive ? 'active' : ''].join(' ').trim()}
+              to={"/admin/" + item.slug}
+              title={collapsed ? item.label : undefined}
+              className={() => (isActive ? "nav-active" : "nav-inactive")}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                padding: collapsed ? "10px" : "10px 12px",
+                borderRadius: "8px",
+                minHeight: "39px",
+                textDecoration: "none",
+                fontSize: "13.5px",
+                fontWeight: "500",
+                lineHeight: "1.25",
+                transition: "all 0.2s ease",
+                justifyContent: collapsed ? "center" : "flex-start",
+                color: "#474554",
+              }}
             >
-              <span className="sidebar-icon admin-sidebar-icon">{item.icon}</span>
-              <span className="admin-sidebar-label">{item.label}</span>
+              <span
+                style={{
+                  width: "19px",
+                  height: "19px",
+                  minWidth: "19px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                {item.icon}
+              </span>
+              {!collapsed && (
+                <span
+                  style={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {item.label}
+                </span>
+              )}
             </NavLink>
-          ))}
-        </nav>
+          );
+        })}
+      </nav>
 
-        <div className="admin-sidebar-footer">
-          {footerItems.map((item) => (
-            <button key={item.label} type="button" className={item.className}>
-              <span className="admin-sidebar-footer-icon">{item.icon}</span>
-              <span>{item.label}</span>
+      {/* Footer */}
+      <div style={{ padding: "12px 8px", marginTop: "auto" }}>
+        <div style={{ borderTop: "1px solid #efedf4", margin: "0 8px 12px" }} />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: collapsed ? "center" : "space-between",
+            gap: "8px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              textDecoration: "none",
+              color: "#1a1926",
+            }}
+          >
+            <div
+              style={{
+                width: "28px",
+                height: "28px",
+                borderRadius: "50%",
+                border: "1px solid #efedf4",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "hidden",
+                flexShrink: 0,
+              }}
+            >
+              <img
+                src={logoImg}
+                alt="Admin"
+                style={{ width: "80%", height: "80%", objectFit: "contain" }}
+              />
+            </div>
+            {!collapsed && (
+              <span style={{ fontSize: "12px", fontWeight: "600" }}>Admin</span>
+            )}
+          </div>
+          {!collapsed && (
+            <button
+              style={{
+                background: "#eef1f8",
+                color: "#5046e5",
+                border: "none",
+                borderRadius: "12px",
+                padding: "6px 10px",
+                fontSize: "11px",
+                fontWeight: "700",
+                cursor: "pointer",
+              }}
+            >
+              Super Admin
             </button>
-          ))}
+          )}
         </div>
       </div>
     </aside>

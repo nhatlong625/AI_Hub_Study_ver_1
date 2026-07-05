@@ -1,21 +1,117 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import welcomeIllustration from '../../assets/hero-illustration.svg';
+import { adminService } from '../../services/adminService';
 
 function AdminDashboardPage() {
+  const navigate = useNavigate();
   const [timeframe, setTimeframe] = useState('Last 30 Days');
+  const [dashboard, setDashboard] = useState({
+    stats: {
+      totalUsers: 0,
+      newUsersThisMonth: 0,
+      totalRevenue: 0,
+      plusRevenue: 0,
+      proRevenue: 0,
+      totalDocuments: 0,
+      totalSizeMb: 0,
+      approvedDocuments: 0,
+      pendingDocuments: 0,
+      totalPracticeTests: 0,
+      pendingReviews: 0,
+    },
+    planDistribution: [],
+    recentDocuments: [],
+    recentConversations: [],
+    uploadActivity: [],
+  });
+  const [error, setError] = useState('');
 
   // SVG Chart Dimensions
-  const chartWidth = 600;
-  const chartHeight = 180;
+  const chartWidth = 640;
+  const chartHeight = 220;
+  const chartPadding = { top: 18, right: 20, bottom: 38, left: 42 };
+  const circumference = 377;
 
-  // Conversations Mock Data
-  const conversations = [
-    { id: 1, name: 'Sarah Miller', initials: 'SM', text: 'How do I access the...', time: '2m ago', active: true, color: '#DBEAFE', textColor: '#1D4ED8' },
-    { id: 2, name: 'John Davis', initials: 'JD', text: 'Thanks for the help!', time: '1h ago', active: false, color: '#FEF3C7', textColor: '#B45309' },
-    { id: 3, name: 'Elena Lopez', initials: 'EL', text: 'Is there a practice test for...', time: '3h ago', active: true, color: '#FCE7F3', textColor: '#BE185D' },
-    { id: 4, name: 'Anna Kim', initials: 'AK', text: 'Where is the summary?', time: '8h ago', active: true, color: '#D1FAE5', textColor: '#047857' },
-    { id: 5, name: 'Lucy White', initials: 'LW', text: 'Best practices for study...', time: '1d ago', active: false, color: '#F3E8FF', textColor: '#7C3AED' }
-  ];
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        setError('');
+        const data = await adminService.getDashboard();
+        setDashboard(data);
+      } catch (err) {
+        setError(err.message || 'Could not load dashboard.');
+      }
+    };
+
+    loadDashboard();
+  }, []);
+
+  const stats = dashboard.stats;
+  const planDistribution = ['Basic', 'Plus', 'Pro'].map((plan) => {
+    const match = dashboard.planDistribution.find(item => item.plan?.toLowerCase() === plan.toLowerCase());
+    return {
+      plan,
+      total: match?.total || 0,
+      percent: match?.percent || 0,
+    };
+  });
+  const basicPercent = planDistribution.find(item => item.plan === 'Basic')?.percent || 0;
+  const plusPercent = planDistribution.find(item => item.plan === 'Plus')?.percent || 0;
+  const proPercent = planDistribution.find(item => item.plan === 'Pro')?.percent || 0;
+  const plusOffset = circumference - (plusPercent / 100) * circumference;
+  const proOffset = circumference - (proPercent / 100) * circumference;
+
+  const formatNumber = (value) => new Intl.NumberFormat('en-US').format(value || 0);
+  const formatCurrency = (value) => new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    maximumFractionDigits: 0,
+  }).format(value || 0);
+  const formatSize = (value) => `${Number(value || 0).toFixed(1)} MB`;
+
+  const conversations = Array.isArray(dashboard.recentConversations) ? dashboard.recentConversations : [];
+  const activeConversationCount = conversations.filter(chat => chat.active).length || conversations.length;
+  const formatLocalDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  const formatChartLabel = (dateValue) => {
+    if (!dateValue) return '';
+    const [, month, day] = String(dateValue).slice(0, 10).split('-');
+    return day && month ? `${day}/${month}` : String(dateValue);
+  };
+  const makeEmptyUploadActivity = () => Array.from({ length: 30 }, (_, index) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (29 - index));
+    const isoDate = formatLocalDate(date);
+    return { date: isoDate, label: formatChartLabel(isoDate), uploads: 0, totalBytes: 0 };
+  });
+  const recentDashboardDocuments = Array.isArray(dashboard.recentDocuments) ? dashboard.recentDocuments.slice(0, 3) : [];
+  const uploadActivity = Array.isArray(dashboard.uploadActivity) ? dashboard.uploadActivity : [];
+  const chartData = (uploadActivity.length > 0 ? uploadActivity : makeEmptyUploadActivity()).map(item => ({
+    ...item,
+    label: formatChartLabel(item.date) || item.label,
+  }));
+  const maxUploads = Math.max(1, ...chartData.map(item => Number(item.uploads || 0)));
+  const plotWidth = chartWidth - chartPadding.left - chartPadding.right;
+  const plotHeight = chartHeight - chartPadding.top - chartPadding.bottom;
+  const pointFor = (item, index) => {
+    const x = chartPadding.left + (chartData.length === 1 ? plotWidth / 2 : (index / (chartData.length - 1)) * plotWidth);
+    const y = chartPadding.top + plotHeight - (Number(item.uploads || 0) / maxUploads) * plotHeight;
+    return { x, y };
+  };
+  const chartPoints = chartData.map(pointFor);
+  const linePath = chartPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
+  const areaPath = `${linePath} L ${chartPoints.at(-1)?.x || chartPadding.left} ${chartPadding.top + plotHeight} L ${chartPoints[0]?.x || chartPadding.left} ${chartPadding.top + plotHeight} Z`;
+  const labelIndexes = chartData
+    .map((_, index) => index)
+    .filter((index) => index === 0 || index === chartData.length - 1 || (index % 7 === 0 && index < chartData.length - 2));
+  const yAxisValues = [...new Set([0, Math.ceil(maxUploads / 2), maxUploads])].sort((a, b) => a - b);
+  const totalUploadsInRange = chartData.reduce((sum, item) => sum + Number(item.uploads || 0), 0);
+  const totalUploadMbInRange = chartData.reduce((sum, item) => sum + Number(item.totalBytes || 0), 0) / 1048576;
 
   return (
     <div className="admin-dashboard-container">
@@ -31,6 +127,8 @@ function AdminDashboardPage() {
           </div>
         </div>
 
+        {error && <div className="dm-empty" style={{ color: '#dc2626' }}>{error}</div>}
+
         {/* Stats Row */}
         <div className="admin-stats-row">
           {/* Card 1: Total Users */}
@@ -43,11 +141,11 @@ function AdminDashboardPage() {
                 </svg>
               </span>
             </div>
-            <div className="admin-stat-value">8,386</div>
+            <div className="admin-stat-value">{formatNumber(stats.totalUsers)}</div>
             <div className="admin-progress-bar-container">
-              <div className="admin-progress-bar-fill" style={{ width: '68%' }}></div>
+              <div className="admin-progress-bar-fill" style={{ width: `${Math.min(100, stats.totalUsers * 8)}%` }}></div>
             </div>
-            <span className="admin-stat-footer">1,412 new this month</span>
+            <span className="admin-stat-footer">{formatNumber(stats.newUsersThisMonth)} new this month</span>
           </div>
 
           {/* Card 2: Total Revenue */}
@@ -60,9 +158,9 @@ function AdminDashboardPage() {
                 </svg>
               </span>
             </div>
-            <div className="admin-stat-value">$142,500</div>
-            <div className="admin-stat-subtext">Basic: $12k | Plus: $45k | Pro: $85.5k</div>
-            <span className="admin-stat-footer text-orange">12% new this month</span>
+            <div className="admin-stat-value">{formatCurrency(stats.totalRevenue)}</div>
+            <div className="admin-stat-subtext">Plus: {formatCurrency(stats.plusRevenue)} | Pro: {formatCurrency(stats.proRevenue)}</div>
+            <span className="admin-stat-footer text-orange">{formatNumber(stats.pendingReviews)} pending reviews</span>
           </div>
 
           {/* Card 3: Uploaded Docs */}
@@ -75,15 +173,20 @@ function AdminDashboardPage() {
                 </svg>
               </span>
             </div>
-            <div className="admin-stat-value">2.4M</div>
-            <span className="admin-stat-footer">~12k daily avg</span>
+            <div className="admin-stat-value">{formatNumber(stats.totalDocuments)}</div>
+            <span className="admin-stat-footer">{formatSize(stats.totalSizeMb)} stored | {formatNumber(stats.totalPracticeTests)} tests</span>
           </div>
         </div>
 
         {/* File Upload Activity */}
         <div className="admin-chart-card">
           <div className="admin-chart-card-header">
-            <h3>File Upload Activity</h3>
+            <div>
+              <h3>File Upload Activity</h3>
+              <p className="admin-chart-summary">
+                {formatNumber(totalUploadsInRange)} uploads - {formatSize(totalUploadMbInRange)} in the last 30 days
+              </p>
+            </div>
             <div className="admin-chart-dropdown">
               <span>{timeframe}</span>
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -100,13 +203,39 @@ function AdminDashboardPage() {
                 </linearGradient>
               </defs>
               {/* Grid Lines */}
-              <line x1="0" y1="45" x2={chartWidth} y2="45" stroke="#f1f0f5" strokeWidth="1" />
-              <line x1="0" y1="90" x2={chartWidth} y2="90" stroke="#f1f0f5" strokeWidth="1" />
-              <line x1="0" y1="135" x2={chartWidth} y2="135" stroke="#f1f0f5" strokeWidth="1" />
-              {/* Curve Shadow Area */}
-              <path d={`M 10 135 C 100 135, 110 95, 170 95 C 230 95, 240 145, 290 145 C 340 145, 390 20, 470 20 C 530 20, 560 135, 590 135 L 590 ${chartHeight} L 10 ${chartHeight} Z`} fill="url(#chartGrad)" />
-              {/* Curved Line */}
-              <path d="M 10 135 C 100 135, 110 95, 170 95 C 230 95, 240 145, 290 145 C 340 145, 390 20, 470 20 C 530 20, 560 135, 590 135" fill="none" stroke="#5d54ea" strokeWidth="4.5" strokeLinecap="round" />
+              {yAxisValues.map((value) => {
+                const ratio = value / maxUploads;
+                const y = chartPadding.top + plotHeight - ratio * plotHeight;
+                return (
+                  <g key={value}>
+                    <line x1={chartPadding.left} y1={y} x2={chartWidth - chartPadding.right} y2={y} stroke="#f1f0f5" strokeWidth="1" />
+                    <text x={chartPadding.left - 10} y={y + 4} textAnchor="end" fontSize="10" fill="#8c8a9e">
+                      {value}
+                    </text>
+                  </g>
+                );
+              })}
+              <path d={areaPath} fill="url(#chartGrad)" />
+              <path d={linePath} fill="none" stroke="#5d54ea" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
+              {chartPoints.map((point, index) => {
+                const item = chartData[index];
+                const uploads = Number(item.uploads || 0);
+                return uploads > 0 ? (
+                  <g key={item.date || index}>
+                    <circle cx={point.x} cy={point.y} r="4.5" fill="#ffffff" stroke="#5d54ea" strokeWidth="3" />
+                    <title>{`${formatChartLabel(item.date) || item.label}: ${uploads} uploads - ${formatSize(Number(item.totalBytes || 0) / 1048576)}`}</title>
+                  </g>
+                ) : null;
+              })}
+              {labelIndexes.map((index) => {
+                const point = chartPoints[index];
+                const item = chartData[index];
+                return (
+                  <text key={`${item.label}-${index}`} x={point.x} y={chartHeight - 10} textAnchor="middle" fontSize="10" fill="#8c8a9e">
+                    {item.label}
+                  </text>
+                );
+              })}
             </svg>
           </div>
         </div>
@@ -117,17 +246,14 @@ function AdminDashboardPage() {
           <div className="admin-bottom-card">
             <div className="admin-bottom-card-header">
               <h3>Subscription Plan</h3>
-              <a href="#view-details" className="admin-card-link">View Details</a>
+              <Link to="/admin/payments" className="admin-card-link">View Details</Link>
             </div>
             <div className="subscription-plan-content">
               <div className="donut-chart-wrapper">
                 <svg viewBox="0 0 160 160" width="130" height="130" className="donut-chart-svg">
-                  {/* Basic segment: 45% (Gray/light-blue background segment) */}
                   <circle cx="80" cy="80" r="60" fill="transparent" stroke="#e6e9f2" strokeWidth="15" strokeDasharray="377" strokeDashoffset="0" />
-                  {/* Plus segment: 35% (Blue/purple) */}
-                  <circle cx="80" cy="80" r="60" fill="transparent" stroke="#5d54ea" strokeWidth="15" strokeDasharray="377" strokeDashoffset="169.65" transform="rotate(-90 80 80)" />
-                  {/* Pro segment: 20% (Purple) */}
-                  <circle cx="80" cy="80" r="60" fill="transparent" stroke="#8b5cf6" strokeWidth="15" strokeDasharray="377" strokeDashoffset="301.6" transform="rotate(-90 80 80)" />
+                  <circle cx="80" cy="80" r="60" fill="transparent" stroke="#5d54ea" strokeWidth="15" strokeDasharray="377" strokeDashoffset={plusOffset} transform="rotate(-90 80 80)" />
+                  <circle cx="80" cy="80" r="60" fill="transparent" stroke="#8b5cf6" strokeWidth="15" strokeDasharray="377" strokeDashoffset={proOffset} transform="rotate(-90 80 80)" />
                   <text x="80" y="85" textAnchor="middle" fontWeight="700" fontSize="13" fill="#1a1926" className="donut-center-text">Plans</text>
                 </svg>
               </div>
@@ -135,17 +261,17 @@ function AdminDashboardPage() {
                 <div className="legend-item">
                   <span className="legend-color-dot dot-basic"></span>
                   <span className="legend-label">Basic</span>
-                  <span className="legend-percent">45%</span>
+                  <span className="legend-percent">{basicPercent}%</span>
                 </div>
                 <div className="legend-item">
                   <span className="legend-color-dot dot-plus"></span>
                   <span className="legend-label">Plus</span>
-                  <span className="legend-percent">35%</span>
+                  <span className="legend-percent">{plusPercent}%</span>
                 </div>
                 <div className="legend-item">
                   <span className="legend-color-dot dot-pro"></span>
                   <span className="legend-label">Pro</span>
-                  <span className="legend-percent">20%</span>
+                  <span className="legend-percent">{proPercent}%</span>
                 </div>
               </div>
             </div>
@@ -155,7 +281,7 @@ function AdminDashboardPage() {
           <div className="admin-bottom-card">
             <div className="admin-bottom-card-header">
               <h3>File Upload History</h3>
-              <a href="#view-all" className="admin-card-link">View All</a>
+              <Link to="/admin/documents" className="admin-card-link">View All</Link>
             </div>
             <div className="admin-table-wrapper">
               <table className="admin-history-table">
@@ -168,38 +294,24 @@ function AdminDashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>
-                      <div className="file-name-cell">
-                        <svg className="file-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-                          <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-                        </svg>
-                        <span>Advanced Calculus</span>
-                      </div>
-                    </td>
-                    <td className="text-gray">Sarah Miller</td>
-                    <td className="text-gray">2 mins ago</td>
-                    <td>
-                      <span className="status-badge status-success">Success</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div className="file-name-cell">
-                        <svg className="file-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-                          <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-                        </svg>
-                        <span>History Essay.docx</span>
-                      </div>
-                    </td>
-                    <td className="text-gray">John Davis</td>
-                    <td className="text-gray">1 hr ago</td>
-                    <td>
-                      <span className="status-badge status-success">Success</span>
-                    </td>
-                  </tr>
+                  {recentDashboardDocuments.map((doc) => (
+                    <tr key={doc.title}>
+                      <td>
+                        <div className="file-name-cell">
+                          <svg className="file-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                            <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                          </svg>
+                          <span>{doc.title}</span>
+                        </div>
+                      </td>
+                      <td className="text-gray">{doc.user}</td>
+                      <td className="text-gray">{doc.time}</td>
+                      <td>
+                        <span className={`status-badge ${doc.status === 'Approved' ? 'status-success' : ''}`}>{doc.status}</span>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -241,25 +353,37 @@ function AdminDashboardPage() {
         <div className="admin-side-card">
           <div className="ai-tutor-header">
             <h3>AI Tutor</h3>
-            <span className="active-badge">12 active</span>
+            <span className="active-badge">{formatNumber(activeConversationCount)} active</span>
           </div>
           <div className="tutor-chats-list">
-            {conversations.map((chat) => (
-              <div key={chat.id} className="tutor-chat-item">
+            {conversations.length === 0 ? (
+              <div className="dm-empty">No recent conversations.</div>
+            ) : conversations.map((chat) => (
+              <button
+                key={chat.id}
+                type="button"
+                className="tutor-chat-item"
+                onClick={() => navigate(`/admin/conversations?id=${chat.id}`)}
+              >
                 <div className="chat-avatar" style={{ backgroundColor: chat.color, color: chat.textColor }}>
                   {chat.initials}
                 </div>
-                <div className="chat-details">
+                <div className="chat-info">
                   <div className="chat-name-row">
                     <span className="chat-name">{chat.name}</span>
                     <span className="chat-time">{chat.time}</span>
                   </div>
-                  <p className="chat-text">{chat.text}</p>
+                  <p className="chat-preview">{chat.text}</p>
                 </div>
-              </div>
+                {chat.active && <div className="chat-active-dot" />}
+              </button>
             ))}
           </div>
-          <button type="button" className="view-all-chats-btn">
+          <button
+            type="button"
+            className="view-all-chats-btn"
+            onClick={() => navigate('/admin/conversations')}
+          >
             View All Conversations
           </button>
         </div>
