@@ -2,10 +2,10 @@ import os
 import re
 from typing import List
 
-import google.generativeai as genai
 import httpx
 
 from src.core.config import get_settings
+from src.core.runtime_ai_config import get_runtime_ai_config
 from src.prompts.prompt_templates import build_study_answer_prompt
 from src.schemas.chat import ContextDocument
 
@@ -13,16 +13,50 @@ from src.schemas.chat import ContextDocument
 class LlmService:
     def __init__(self):
         self.settings = get_settings()
-        requested_provider = (self.settings.llm_provider or "auto").lower()
-        self.provider_order = self._select_providers(requested_provider)
+        self._disable_broken_local_proxy()
+        self._refresh_runtime_config()
+
+    def _refresh_runtime_config(self) -> None:
+        runtime = get_runtime_ai_config()
+        self.openai_api_key = runtime.get("openai_api_key") or self.settings.openai_api_key
+        self.openai_model = runtime.get("openai_model") or self.settings.openai_model
+        self.gemini_api_key = runtime.get("gemini_api_key") or self.settings.gemini_api_key
+        self.gemini_model_name = runtime.get("gemini_model") or self.settings.gemini_model
+        self.temperature = self._float_value(runtime.get("temperature"), 0.3)
+        self.max_tokens = self._int_value(runtime.get("max_tokens"), 2048)
+        self.top_p = self._float_value(runtime.get("top_p"), 1.0)
+        self.system_prompt = runtime.get("system_prompt") or (
+            "You are a helpful AI study assistant. Answer clearly and use the provided "
+            "course/document context when available."
+        )
+
+        configured_order = [
+            item.strip().lower()
+            for item in str(runtime.get("provider_order") or "").split(",")
+            if item.strip()
+        ]
+        if configured_order:
+            self.provider_order = [
+                provider for provider in configured_order
+                if (provider == "openai" and self.openai_api_key)
+                or (provider == "gemini" and self._has_valid_gemini_key())
+            ] or ["mock"]
+        else:
+            requested_provider = (self.settings.llm_provider or "auto").lower()
+            self.provider_order = self._select_providers(requested_provider)
         self.provider = self.provider_order[0] if self.provider_order else "mock"
 
-        if "gemini" in self.provider_order:
-            self._disable_broken_local_proxy()
-            genai.configure(api_key=self.settings.gemini_api_key)
-            self.gemini_model = genai.GenerativeModel(self.settings.gemini_model)
-        else:
-            self.gemini_model = None
+    def _float_value(self, value, fallback: float) -> float:
+        try:
+            return float(value) if value not in (None, "") else fallback
+        except (TypeError, ValueError):
+            return fallback
+
+    def _int_value(self, value, fallback: int) -> int:
+        try:
+            return int(value) if value not in (None, "") else fallback
+        except (TypeError, ValueError):
+            return fallback
 
     def _disable_broken_local_proxy(self) -> None:
         for name in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"):
@@ -39,18 +73,19 @@ class LlmService:
 
         if requested_provider == "gemini":
             add("gemini", self._has_valid_gemini_key())
-            add("openai", bool(self.settings.openai_api_key))
+            add("openai", bool(self.openai_api_key))
         else:
-            add("openai", bool(self.settings.openai_api_key))
+            add("openai", bool(self.openai_api_key))
             add("gemini", self._has_valid_gemini_key())
 
         return providers or ["mock"]
 
     def _has_valid_gemini_key(self) -> bool:
-        key = (self.settings.gemini_api_key or "").strip()
+        key = (self.gemini_api_key or "").strip()
         return key.startswith("AIza") or key.startswith("AQ.")
 
     def generate(self, prompt: str) -> tuple[str, bool]:
+        self._refresh_runtime_config()
         if self.provider == "mock":
             return (
                 "Demo mode is active because no LLM API key is configured. This is a mock AI response.",
@@ -63,6 +98,7 @@ class LlmService:
             return self._mock_answer_for_ai_error(str(exc), []), True
 
     def answer(self, question: str, hits: List[ContextDocument]) -> tuple[str, bool]:
+        self._refresh_runtime_config()
         if not hits:
             return "I could not find a document summary in the database that matches this question. Please select a more specific subject or upload/summarize a related document first.", False
 
@@ -93,11 +129,7 @@ class LlmService:
         raise RuntimeError("; ".join(errors) or "No LLM provider is configured.")
 
     def _generate_gemini(self, prompt: str) -> str:
-        if self.settings.gemini_api_key.startswith("AQ."):
-            return self._generate_gemini_rest(prompt)
-
-        response = self.gemini_model.generate_content(prompt)
-        return response.text or "Gemini did not return any content."
+        return self._generate_gemini_rest(prompt)
 
     def _generate_gemini_rest(self, prompt: str) -> str:
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
@@ -107,8 +139,8 @@ class LlmService:
             for model in self._gemini_rest_model_candidates():
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
                 for request_kwargs in (
-                    {"headers": {"x-goog-api-key": self.settings.gemini_api_key}},
-                    {"params": {"key": self.settings.gemini_api_key}},
+                    {"headers": {"x-goog-api-key": self.gemini_api_key}},
+                    {"params": {"key": self.gemini_api_key}},
                 ):
                     try:
                         response = client.post(url, json=payload, **request_kwargs)
@@ -126,7 +158,7 @@ class LlmService:
     def _gemini_rest_model_candidates(self) -> list[str]:
         candidates = []
         for model in (
-            self.settings.gemini_model,
+            self.gemini_model_name,
             "gemini-2.5-flash-lite",
             "gemini-2.0-flash",
         ):
@@ -146,19 +178,21 @@ class LlmService:
             response = client.post(
                 "https://api.openai.com/v1/chat/completions",
                 headers={
-                    "Authorization": f"Bearer {self.settings.openai_api_key}",
+                    "Authorization": f"Bearer {self.openai_api_key}",
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": self.settings.openai_model,
+                    "model": self.openai_model,
                     "messages": [
                         {
                             "role": "system",
-                            "content": "You are a helpful AI study assistant. Answer clearly and use the provided course/document context when available.",
+                            "content": self.system_prompt,
                         },
                         {"role": "user", "content": prompt},
                     ],
-                    "temperature": 0.3,
+                    "temperature": self.temperature,
+                    "max_tokens": self.max_tokens,
+                    "top_p": self.top_p,
                 },
             )
         response.raise_for_status()

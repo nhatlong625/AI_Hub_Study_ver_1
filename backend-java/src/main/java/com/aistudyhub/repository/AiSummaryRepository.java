@@ -69,6 +69,19 @@ public class AiSummaryRepository {
                 """, String.class, documentId, userId);
         return summaries.stream().findFirst();
     }
+    public Optional<String> findLatestAnySummary(Integer documentId, Integer userId) {
+        List<String> summaries = jdbcTemplate.queryForList("""
+                SELECT TOP 1 summary_content
+                FROM AI_SUMMARY
+                WHERE document_id = ?
+                ORDER BY
+                    CASE WHEN user_id = ? THEN 0 ELSE 1 END,
+                    created_at DESC,
+                    summary_id DESC
+                """, String.class, documentId, userId);
+        return summaries.stream().findFirst();
+    }
+
     /** LÃƒÂ¡Ã‚ÂºÃ‚Â¥y cÃƒÆ’Ã‚Â¡c summary cÃƒÂ¡Ã‚Â»Ã‚Â§a user, lÃƒÂ¡Ã‚Â»Ã‚Âc theo subject/document nÃƒÂ¡Ã‚ÂºÃ‚Â¿u cÃƒÆ’Ã‚Â³ ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â dÃƒÆ’Ã‚Â¹ng lÃƒÆ’Ã‚Â m context RAG cho chat. */
     public List<SummaryHit> findForChatContext(Integer userId, Integer subjectId, List<Integer> documentIds) {
         StringBuilder sql = new StringBuilder("""
