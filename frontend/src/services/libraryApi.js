@@ -1,6 +1,6 @@
 // src/services/libraryApi.js
 // ============================================================
-// API service - connects to the Spring Boot backend.
+// API Service - Káº¿t ná»‘i vá»›i Spring Boot Backend
 // ============================================================
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
@@ -28,7 +28,7 @@ export const libraryApi = {
 };
 
 export const semesterApi = {
-  // Load all semesters and subjects in the system.
+  // Láº¥y táº¥t cáº£ semester + subject cá»§a há»‡ thá»‘ng
   getAll: async () => {
     const res = await fetch(`${BASE_URL}/semesters`, { headers: getHeaders() });
     return res.json();
@@ -39,7 +39,7 @@ export const semesterApi = {
 // SUBJECT API
 // ============================================================
 export const subjectApi = {
-  // Load subjects by semester.
+  // Láº¥y subject theo semester
   getBySemester: async (semesterId) => {
     const res = await fetch(`${BASE_URL}/subjects/semester/${semesterId}`, {
       headers: getHeaders(),
@@ -47,7 +47,7 @@ export const subjectApi = {
     return res.json();
   },
 
-  // Add a new subject for custom-course creation flows.
+  // ThÃªm subject má»›i (dÃ¹ng cho flow táº¡o mÃ´n má»›i ngoÃ i danh sÃ¡ch)
   add: async (semesterId, subjectName, description = "") => {
     const res = await fetch(
       `${BASE_URL}/subjects?semesterId=${semesterId}&subjectName=${encodeURIComponent(subjectName)}&description=${encodeURIComponent(description)}`,
@@ -56,7 +56,7 @@ export const subjectApi = {
     return res.json();
   },
 
-  // Delete a subject.
+  // XÃ³a subject
   delete: async (subjectId) => {
     const res = await fetch(`${BASE_URL}/subjects/${subjectId}`, {
       method: "DELETE",
@@ -67,11 +67,11 @@ export const subjectApi = {
 };
 
 // ============================================================
-// USER_SUBJECT API - subjects the user added to their personal Library.
-// Independent from whether the user has uploaded documents yet.
+// USER_SUBJECT API â€” subject user Ä‘Ã£ "add" vÃ o Library cÃ¡ nhÃ¢n
+// (Ä‘á»™c láº­p vá»›i viá»‡c Ä‘Ã£ upload tÃ i liá»‡u hay chÆ°a)
 // ============================================================
 export const userSubjectApi = {
-  // Load subjects the user added; used to render the Library page.
+  // Láº¥y danh sÃ¡ch subject user Ä‘Ã£ add â€” dÃ¹ng Ä‘á»ƒ render báº£ng Library
   getByUser: async (userId) => {
     const res = await fetch(`${BASE_URL}/user-subjects/user/${userId}`, {
       headers: getHeaders(),
@@ -80,7 +80,7 @@ export const userSubjectApi = {
     return res.json();
   },
 
-  // Add one subject to Library when the Create Course modal is submitted.
+  // Add 1 subject vÃ o Library â€” gá»i khi báº¥m "Create" trong modal Create Course
   add: async (userId, subjectId) => {
     const res = await fetch(
       `${BASE_URL}/user-subjects?userId=${userId}&subjectId=${subjectId}`,
@@ -95,7 +95,7 @@ export const userSubjectApi = {
     return res.json();
   },
 
-  // Remove a subject from Library; BE also removes the user documents/files in it.
+  // XÃ³a subject khá»i Library â€” BE xÃ³a cáº£ document + file Supabase cá»§a user trong subject nÃ y
   remove: async (userId, subjectId) => {
     const res = await fetch(
       `${BASE_URL}/user-subjects?userId=${userId}&subjectId=${subjectId}`,
@@ -114,7 +114,7 @@ export const userSubjectApi = {
 // DOCUMENT API
 // ============================================================
 export const documentApi = {
-  // Upload file (multipart); visibilityStatus defaults to PRIVATE.
+  // Upload file (multipart) â€” visibilityStatus máº·c Ä‘á»‹nh PRIVATE
   upload: async (
     file,
     title,
@@ -146,19 +146,15 @@ export const documentApi = {
     return res.json();
   },
 
-  // Load all documents in one subject for the current user Library view.
+  // Láº¥y táº¥t cáº£ document cá»§a 1 subject (má»i visibility â€” dÃ¹ng trong Library cá»§a chÃ­nh user)
   getBySubject: async (subjectId) => {
     const res = await fetch(`${BASE_URL}/documents/subject/${subjectId}`, {
       headers: getHeaders(),
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || `Cannot load subject documents (HTTP ${res.status}).`);
-    }
     return res.json();
   },
 
-  // Load public documents in one subject for the Home page.
+  // Láº¥y document PUBLIC cá»§a 1 subject (dÃ¹ng á»Ÿ Home page â€” hiá»‡n cho má»i ngÆ°á»i)
   getPublicBySubject: async (subjectId) => {
     const res = await fetch(
       `${BASE_URL}/documents/subject/${subjectId}/public`,
@@ -168,19 +164,15 @@ export const documentApi = {
     return res.json();
   },
 
-  // Load documents owned by one user for the Library page.
+  // Láº¥y document theo user (dÃ¹ng trong Library â€” chá»‰ doc cá»§a mÃ¬nh)
   getByUser: async (userId) => {
     const res = await fetch(`${BASE_URL}/documents/user/${userId}`, {
       headers: getHeaders(),
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || `Cannot load user documents (HTTP ${res.status}).`);
-    }
     return res.json();
   },
 
-  // Load one document by ID.
+  // Láº¥y 1 document theo ID
   getById: async (documentId) => {
     const res = await fetch(`${BASE_URL}/documents/${documentId}`, {
       headers: getHeaders(),
@@ -194,7 +186,7 @@ export const documentApi = {
     return res.json();
   },
 
-  // Delete a document; BE also removes the file from storage.
+  // XÃ³a document (BE sáº½ xÃ³a cáº£ file trÃªn Supabase)
   delete: async (documentId) => {
     const res = await fetch(`${BASE_URL}/documents/${documentId}`, {
       method: "DELETE",
@@ -203,12 +195,12 @@ export const documentApi = {
     return res.text();
   },
 
-  // Update visibility; BE applies the state-transition rules:
-  //   PRIVATE -> PENDING_REVIEW: submit admin review request.
-  //   PUBLIC -> PRIVATE: immediate.
-  //   PENDING_REVIEW -> anything except PRIVATE: rejected while pending (409).
-  //   Cooldown: wait 1h before PRIVATE -> PENDING_REVIEW again (429).
-  //   Applies after self-cancel, admin reject, or PUBLIC -> PRIVATE.
+  // Cáº­p nháº­t visibility â€” BE xá»­ lÃ½ logic:
+  //   PRIVATE  â†’ PENDING_REVIEW : gá»­i request admin duyá»‡t
+  //   PUBLIC   â†’ PRIVATE        : tá»©c thÃ¬
+  //   PENDING_REVIEW â†’ reject náº¿u Ä‘ang pending (409)
+  //   Cooldown 1h khi Ä‘á»•i PRIVATE â†’ PENDING_REVIEW quÃ¡ nhanh (429, Ã¡p dá»¥ng
+  //   chung cho má»i nguyÃªn nhÃ¢n: tá»±-há»§y, admin reject, vá»«a PUBLICâ†’PRIVATE)
   updateVisibility: async (documentId, visibilityStatus) => {
     const res = await fetch(
       `${BASE_URL}/documents/${documentId}/visibility?visibilityStatus=${visibilityStatus}`,
@@ -223,7 +215,7 @@ export const documentApi = {
     return res.json();
   },
 
-  // Rename display title without affecting visibility/cooldown.
+  // Äá»•i tÃªn hiá»ƒn thá»‹ (title) â€” khÃ´ng áº£nh hÆ°á»Ÿng visibility/cooldown
   updateTitle: async (documentId, title) => {
     const res = await fetch(
       `${BASE_URL}/documents/${documentId}/title?title=${encodeURIComponent(title)}`,
@@ -238,8 +230,8 @@ export const documentApi = {
     return res.json();
   },
 
-  // Share Document.
-  // Create or reuse an ACTIVE share link; idempotent.
+  // â”€â”€ Share Document â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Táº¡o hoáº·c láº¥y láº¡i link share ACTIVE â€” idempotent
   createShareLink: async (documentId, userId = 1) => {
     const res = await fetch(
       `${BASE_URL}/documents/${documentId}/share?userId=${userId}`,
@@ -252,7 +244,7 @@ export const documentApi = {
     return res.json(); // { shareId, documentId, shareType, status, shareUrl }
   },
 
-  // Revoke the ACTIVE share link.
+  // Há»§y link share ACTIVE
   revokeShareLink: async (documentId, userId = 1) => {
     const res = await fetch(
       `${BASE_URL}/documents/${documentId}/share?userId=${userId}`,
@@ -264,7 +256,7 @@ export const documentApi = {
     }
   },
 
-  // Load document by shareId; public and does not require auth.
+  // Láº¥y document theo shareId â€” public, khÃ´ng cáº§n auth
   getByShareId: async (shareId) => {
     const res = await fetch(`${BASE_URL}/documents/share/${shareId}`, {
       headers: getHeaders(),
@@ -397,18 +389,5 @@ export const commentApi = {
       headers: getHeaders(),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  },
-
-  update: async (commentId, content) => {
-    const res = await fetch(`${BASE_URL}/comments/${commentId}`, {
-      method: "PUT",
-      headers: getHeaders(),
-      body: JSON.stringify({ content }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || `HTTP ${res.status}`);
-    }
-    return res.json();
   },
 };

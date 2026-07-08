@@ -7,7 +7,7 @@ import {
   userSubjectApi,
 } from "../../services/libraryApi";
 
-// Badge config.
+// ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Badge config ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
 function isMockSeedDocument(doc) {
   return String(doc?.documentName || "").toLowerCase().startsWith("mock-");
 }
@@ -55,22 +55,15 @@ const MoreIcon = () => (
   </svg>
 );
 
-function semesterOrderValue(semester = {}) {
-  const nameNumber = String(semester.semesterName || "").match(/\d+/);
-  if (nameNumber) return Number(nameNumber[0]);
-  const idNumber = Number(semester.semesterId);
-  return Number.isFinite(idNumber) ? idNumber : Number.MAX_SAFE_INTEGER;
-}
-
-// CreateCourseModal.
-// Normalized note.
+// ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ CreateCourseModal ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
+// Cho user chÃƒÂ¡Ã‚Â»Ã‚Ân Semester ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ chÃƒÂ¡Ã‚Â»Ã‚Ân mÃƒÆ’Ã‚Â´n tÃƒÂ¡Ã‚Â»Ã‚Â« danh sÃƒÆ’Ã‚Â¡ch hÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡ thÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœng ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Create
 function CreateCourseModal({
   allSemesters,
   userSubjectNames,
   onClose,
   onCreated,
 }) {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1); // 1: chÃƒÂ¡Ã‚Â»Ã‚Ân semester, 2: chÃƒÂ¡Ã‚Â»Ã‚Ân mÃƒÆ’Ã‚Â´n
   const [selectedSem, setSelectedSem] = useState(null);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [search, setSearch] = useState("");
@@ -78,7 +71,7 @@ function CreateCourseModal({
   const [creating, setCreating] = useState(false);
   const searchRef = useRef(null);
 
-  // Normalized note.
+  // Danh sÃƒÆ’Ã‚Â¡ch mÃƒÆ’Ã‚Â´n cÃƒÂ¡Ã‚Â»Ã‚Â§a semester Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â£ chÃƒÂ¡Ã‚Â»Ã‚Ân, lÃƒÂ¡Ã‚Â»Ã‚Âc ra nhÃƒÂ¡Ã‚Â»Ã‚Â¯ng mÃƒÆ’Ã‚Â´n user chÃƒâ€ Ã‚Â°a add
   const availableSubjects = selectedSem
     ? (selectedSem.subjects ?? []).filter(
         (sub) => !userSubjectNames.includes(sub.subjectName),
@@ -103,8 +96,8 @@ function CreateCourseModal({
     setError("");
     setCreating(true);
     try {
-      // Normalized note.
-      // Normalized note.
+      // KhÃƒÆ’Ã‚Â´ng tÃƒÂ¡Ã‚ÂºÃ‚Â¡o subject mÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi trong DB hÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡ thÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœng ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â chÃƒÂ¡Ã‚Â»Ã¢â‚¬Â° ghi nhÃƒÂ¡Ã‚ÂºÃ‚Â­n user Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â£ add
+      // mÃƒÆ’Ã‚Â´n nÃƒÆ’Ã‚Â y vÃƒÆ’Ã‚Â o Library cÃƒÆ’Ã‚Â¡ nhÃƒÆ’Ã‚Â¢n (USER_SUBJECT), rÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“i navigate vÃƒÆ’Ã‚Â o folder.
       await onCreated({
         semesterName: selectedSem.semesterName,
         subject: selectedSubject,
@@ -290,23 +283,23 @@ function CreateCourseModal({
   );
 }
 
-// Main page.
+// ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Main Page ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
 export default function StudentLibraryPage() {
   const navigate = useNavigate();
 
-  // allSemesters: system semesters and subjects used by Create Course.
+  // allSemesters: toÃƒÆ’Ã‚Â n bÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢ semester + subject cÃƒÂ¡Ã‚Â»Ã‚Â§a hÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡ thÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœng (Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ chÃƒÂ¡Ã‚Â»Ã‚Ân khi Create Course)
   const [allSemesters, setAllSemesters] = useState([]);
-  // addedSubjects: subjects the user has added to Library.
-  // Normalized note.
+  // addedSubjects: subject user Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â£ "add" vÃƒÆ’Ã‚Â o Library ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â nguÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“n thÃƒÂ¡Ã‚ÂºÃ‚Â­t tÃƒÂ¡Ã‚Â»Ã‚Â« USER_SUBJECT,
+  // tÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“n tÃƒÂ¡Ã‚ÂºÃ‚Â¡i Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢c lÃƒÂ¡Ã‚ÂºÃ‚Â­p vÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi viÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡c Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â£ upload doc hay chÃƒâ€ Ã‚Â°a
   const [addedSubjects, setAddedSubjects] = useState([]); // [{ subjectId, addedAt }]
-  // docCounts: file count by subjectId, used for display only.
+  // docCounts: { [subjectId]: sÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœ file } ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â chÃƒÂ¡Ã‚Â»Ã¢â‚¬Â° dÃƒÆ’Ã‚Â¹ng Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ hiÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡n sÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœ liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u, khÃƒÆ’Ã‚Â´ng quyÃƒÂ¡Ã‚ÂºÃ‚Â¿t Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¹nh subject cÃƒÆ’Ã‚Â³ hiÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡n hay khÃƒÆ’Ã‚Â´ng
   const [docCounts, setDocCounts] = useState({});
-  // docStorage: total bytes by subjectId, used before removing a subject.
+  // docStorage: { [subjectId]: tÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¢ng bytes } ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â dÃƒÆ’Ã‚Â¹ng Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ trÃƒÂ¡Ã‚Â»Ã‚Â« Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Âºng khi xÃƒÆ’Ã‚Â³a 1 subject khÃƒÂ¡Ã‚Â»Ã‚Âi Library
   const [docStorage, setDocStorage] = useState({});
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState(null);
-  // actionMenu stores the active semester and menu step.
+  // actionMenu: { semesterId, step } ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â step: "root" (chÃƒÂ¡Ã‚Â»Ã¢â‚¬Â° cÃƒÆ’Ã‚Â³ nÃƒÆ’Ã‚Âºt Delete) | "subjects" (list mÃƒÆ’Ã‚Â´n Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ chÃƒÂ¡Ã‚Â»Ã‚Ân xÃƒÆ’Ã‚Â³a)
   const [actionMenu, setActionMenu] = useState(null);
 
   // Stats: totalFiles, totalStorage
@@ -316,7 +309,7 @@ export default function StudentLibraryPage() {
   const userId = getCurrentUserId();
 
   useEffect(() => {
-    // Normalized note.
+    // Load toÃƒÆ’Ã‚Â n bÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢ semester+subject cÃƒÂ¡Ã‚Â»Ã‚Â§a hÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡ thÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœng
     libraryApi
       .getOverview(userId)
       .then((overview) => {
@@ -357,7 +350,7 @@ export default function StudentLibraryPage() {
       .finally(() => setLoading(false));
   }, [userId]);
 
-  // allSemesters: system semesters and subjects used by Create Course.
+  // userSubjects: enrich addedSubjects vÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi tÃƒÆ’Ã‚Âªn (tÃƒÂ¡Ã‚Â»Ã‚Â« allSemesters) + docCount (tÃƒÂ¡Ã‚Â»Ã‚Â« docCounts)
   const userSubjects = addedSubjects.map((link) => {
     let subjectName = null;
     let subjectCode = null;
@@ -385,17 +378,15 @@ export default function StudentLibraryPage() {
     };
   });
 
+  // LuÃƒÆ’Ã‚Â´n render Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã‚Â§ Semester 0 ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Semester 9 (kÃƒÂ¡Ã‚Â»Ã†â€™ cÃƒÂ¡Ã‚ÂºÃ‚Â£ rÃƒÂ¡Ã‚Â»Ã¢â‚¬â€ng) ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â subjects cÃƒÂ¡Ã‚Â»Ã‚Â§a mÃƒÂ¡Ã‚Â»Ã¢â‚¬â€i
+  // semester chÃƒÂ¡Ã‚Â»Ã¢â‚¬Â° gÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“m nhÃƒÂ¡Ã‚Â»Ã‚Â¯ng mÃƒÆ’Ã‚Â´n user Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â£ add (cÃƒÆ’Ã‚Â³ doc), khÃƒÆ’Ã‚Â´ng phÃƒÂ¡Ã‚ÂºÃ‚Â£i toÃƒÆ’Ã‚Â n bÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢ mÃƒÆ’Ã‚Â´n hÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡ thÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœng.
   const grouped = [...allSemesters]
-    .map((sem) => {
-      const subjects = userSubjects.filter((us) => us.semesterId === sem.semesterId);
-      return {
-        semesterName: sem.semesterName,
-        semesterId: sem.semesterId,
-        subjects,
-      };
-    })
-    .filter((sem) => sem.subjects.length > 0)
-    .sort((a, b) => semesterOrderValue(a) - semesterOrderValue(b));
+    .sort((a, b) => a.semesterId - b.semesterId)
+    .map((sem) => ({
+      semesterName: sem.semesterName,
+      semesterId: sem.semesterId,
+      subjects: userSubjects.filter((us) => us.semesterId === sem.semesterId),
+    }));
 
   const totalCourses = userSubjects.length;
   const storageMB = (totalStorageBytes / 1024 / 1024).toFixed(1);
@@ -416,8 +407,8 @@ export default function StudentLibraryPage() {
     try {
       await userSubjectApi.add(userId, subject.subjectId);
     } catch (err) {
-      // 409 means the user already added this subject.
-      // Normalized note.
+      // 409 = user Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â£ add mÃƒÆ’Ã‚Â´n nÃƒÆ’Ã‚Â y rÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“i (hiÃƒÂ¡Ã‚ÂºÃ‚Â¿m khi xÃƒÂ¡Ã‚ÂºÃ‚Â£y ra vÃƒÆ’Ã‚Â¬ modal Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â£ lÃƒÂ¡Ã‚Â»Ã‚Âc sÃƒÂ¡Ã‚ÂºÃ‚Âµn) ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â bÃƒÂ¡Ã‚Â»Ã‚Â qua, vÃƒÂ¡Ã‚ÂºÃ‚Â«n cho vÃƒÆ’Ã‚Â o folder.
+      // LÃƒÂ¡Ã‚Â»Ã¢â‚¬â€i khÃƒÆ’Ã‚Â¡c (network, 500...) ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ throw lÃƒÂ¡Ã‚ÂºÃ‚Â¡i Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ modal hiÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡n thÃƒÆ’Ã‚Â´ng bÃƒÆ’Ã‚Â¡o, khÃƒÆ’Ã‚Â´ng Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â³ng modal.
       if (err.status !== 409) throw err;
     }
     setAddedSubjects((prev) =>
@@ -432,19 +423,19 @@ export default function StudentLibraryPage() {
     navigate("/student/library");
   }
 
-  // Normalized note.
+  // BÃƒÂ¡Ã‚ÂºÃ‚Â¥m vÃƒÆ’Ã‚Â o 1 mÃƒÆ’Ã‚Â£ mÃƒÆ’Ã‚Â´n trong dropdown "Delete" cÃƒÂ¡Ã‚Â»Ã‚Â§a action menu ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â mÃƒÂ¡Ã‚Â»Ã…Â¸ ConfirmDialog
   function handleDeleteSubject(subject) {
     setActionMenu(null);
     setConfirmDialog({
       title: `Delete "${subject.subjectName}"?`,
       fileName: subject.subjectName,
       onConfirm: async () => {
-        // Normalized note.
-        // Normalized note.
-        // Normalized note.
+        // KhÃƒÆ’Ã‚Â´ng dÃƒÆ’Ã‚Â¹ng finally Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â³ng dialog ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â chÃƒÂ¡Ã‚Â»Ã¢â‚¬Â° Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â³ng khi thÃƒÆ’Ã‚Â nh cÃƒÆ’Ã‚Â´ng.
+        // NÃƒÂ¡Ã‚ÂºÃ‚Â¿u BE trÃƒÂ¡Ã‚ÂºÃ‚Â£ lÃƒÂ¡Ã‚Â»Ã¢â‚¬â€i, exception sÃƒÂ¡Ã‚ÂºÃ‚Â½ bubble lÃƒÆ’Ã‚Âªn ConfirmDialog Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ hiÃƒÂ¡Ã‚Â»Ã†â€™n thÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¹ trÃƒÂ¡Ã‚ÂºÃ‚Â¡ng thÃƒÆ’Ã‚Â¡i lÃƒÂ¡Ã‚Â»Ã¢â‚¬â€i,
+        // vÃƒÆ’Ã‚Â  dialog vÃƒÂ¡Ã‚ÂºÃ‚Â«n mÃƒÂ¡Ã‚Â»Ã…Â¸ Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ user biÃƒÂ¡Ã‚ÂºÃ‚Â¿t xÃƒÆ’Ã‚Â³a thÃƒÂ¡Ã‚ÂºÃ‚Â¥t bÃƒÂ¡Ã‚ÂºÃ‚Â¡i (khÃƒÆ’Ã‚Â´ng ÃƒÆ’Ã‚Â¢m thÃƒÂ¡Ã‚ÂºÃ‚Â§m mÃƒÂ¡Ã‚ÂºÃ‚Â¥t Ãƒâ€žÃ¢â‚¬Ëœi).
         await userSubjectApi.remove(userId, subject.subjectId);
 
-        // Normalized note.
+        // CÃƒÂ¡Ã‚ÂºÃ‚Â­p nhÃƒÂ¡Ã‚ÂºÃ‚Â­t state ngay sau khi BE xÃƒÆ’Ã‚Â¡c nhÃƒÂ¡Ã‚ÂºÃ‚Â­n xÃƒÆ’Ã‚Â³a thÃƒÆ’Ã‚Â nh cÃƒÆ’Ã‚Â´ng
         setAddedSubjects((prev) =>
           prev.filter((a) => a.subjectId !== subject.subjectId),
         );
@@ -461,7 +452,7 @@ export default function StudentLibraryPage() {
           return rest;
         });
 
-        // Normalized note.
+        // Ãƒâ€žÃ‚ÂÃƒÆ’Ã‚Â³ng dialog sau khi state Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â£ update ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â chÃƒÂ¡Ã‚Â»Ã¢â‚¬Â° chÃƒÂ¡Ã‚ÂºÃ‚Â¡y nÃƒÂ¡Ã‚ÂºÃ‚Â¿u khÃƒÆ’Ã‚Â´ng cÃƒÆ’Ã‚Â³ lÃƒÂ¡Ã‚Â»Ã¢â‚¬â€i
         setConfirmDialog(null);
       },
     });
@@ -709,14 +700,7 @@ export default function StudentLibraryPage() {
                             href="#"
                             onClick={(e) => {
                               e.preventDefault();
-                              navigate("/student/library/" + encodeURIComponent(us.subjectName), {
-                                state: {
-                                  subjectId: us.subjectId,
-                                  subjectName: us.subjectName,
-                                  subjectCode: us.subjectCode,
-                                  semesterName
-                                }
-                              });
+                              navigate("/student/library/" + encodeURIComponent(us.subjectName));
                             }}
                             className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:underline transition-colors"
                           >

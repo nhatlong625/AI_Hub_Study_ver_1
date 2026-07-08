@@ -1,11 +1,10 @@
-﻿import { useLocation, useNavigate, useParams } from "react-router-dom";
+﻿import { useNavigate, useParams } from "react-router-dom";
 import { useState, useMemo, useEffect } from "react";
 import DocumentActionMenu from "../../components/common/DocumentActionMenu";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import EditDocumentModal from "../../components/common/EditDocumentModal";
 import { documentApi, semesterApi } from "../../services/libraryApi";
 import ShareDocumentModal from "../../components/common/ShareDocumentModal";
-import { useHistoryContext } from "../../hooks/useHistory";
 
 const AVATAR_COLORS = [
   "bg-indigo-400",
@@ -25,42 +24,6 @@ function getAvatarColor(name = "") {
 }
 
 const ITEMS_PER_PAGE = 9;
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api").replace(/\/$/, "");
-
-function documentFileUrl(documentId, action) {
-  if (!documentId) return "";
-  return `${API_BASE}/documents/${documentId}/${action}`;
-}
-
-async function fetchDocumentBlob(documentId, action) {
-  const token = localStorage.getItem("token");
-  const response = await fetch(documentFileUrl(documentId, action), {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    throw new Error(body.message || `Could not ${action} this document.`);
-  }
-
-  return response.blob();
-}
-
-function canEmbedPreview(type) {
-  return ["pdf", "png", "jpg", "jpeg", "gif", "txt", "md", "csv", "mp4"].includes(
-    String(type || "").toLowerCase(),
-  );
-}
-
-function getDocumentType(doc) {
-  return String(doc?.documentType || "").replace(/^\./, "").toUpperCase() || "FILE";
-}
-
-function getDocumentSizeLabel(doc) {
-  return doc?.documentSize
-    ? (doc.documentSize / 1024 / 1024).toFixed(1) + " MB"
-    : "-";
-}
 
 function isMockSeedDocument(doc) {
   return String(doc?.documentName || "").toLowerCase().startsWith("mock-");
@@ -75,17 +38,17 @@ function getCurrentUserId() {
   }
 }
 
-// Visibility constants.
+// â”€â”€ Visibility constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const VIS = {
   PRIVATE: "PRIVATE",
   PENDING: "PENDING_REVIEW",
   PUBLIC: "PUBLIC",
 };
 
-// Cooldown check mirrors DocumentService.updateVisibility().
-// Normalized note.
-// Cooldown check mirrors DocumentService.updateVisibility().
-// Normalized note.
+// Cooldown 1h â€” pháº£i khá»›p vá»›i DocumentService.updateVisibility() á»Ÿ BE.
+// Check trÆ°á»›c á»Ÿ FE (dá»±a vÃ o updatedAt Ä‘Ã£ cÃ³ sáºµn trong DocumentResponse) Ä‘á»ƒ
+// cháº·n request spam lÃªn BE trong lÃºc cÃ²n cooldown, khÃ´ng pháº£i Ä‘á»£i BE tráº£ 429
+// má»›i biáº¿t. BE váº«n lÃ  nguá»“n sá»± tháº­t cuá»‘i cÃ¹ng â€” check nÃ y chá»‰ lÃ  tá»‘i Æ°u UX.
 const COOLDOWN_MS = 60 * 60 * 1000;
 
 function getCooldownRemainingMs(doc) {
@@ -103,7 +66,7 @@ function formatRemaining(ms) {
   return m === 0 ? hPart : `${hPart} ${m} minute${m === 1 ? "" : "s"}`;
 }
 
-// Cooldown check mirrors DocumentService.updateVisibility().
+// â”€â”€ Notice modal â€” thay cho alert() thÃ´, dÃ¹ng cho cooldown/409 â”€â”€
 function VisibilityNoticeModal({ title, message, onClose }) {
   return (
     <div
@@ -144,10 +107,10 @@ function VisibilityNoticeModal({ title, message, onClose }) {
   );
 }
 
-// Toggle component with three visibility states.
-// PRIVATE: toggle off.
-// PRIVATE: toggle off.
-// PUBLIC: toggle on.
+// â”€â”€ Toggle component â€” 3 tráº¡ng thÃ¡i â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// PRIVATE  â†’ toggle OFF  (gray)
+// PENDING  â†’ toggle OFF  (amber) â€” váº«n báº¥m Ä‘Æ°á»£c Ä‘á»ƒ Tá»° Há»¦Y request, quay vá» Private
+// PUBLIC   â†’ toggle ON   (indigo)
 function VisibilityToggle({ status, onChange, disabled }) {
   const isOn = status === VIS.PUBLIC;
   const isPending = status === VIS.PENDING;
@@ -179,7 +142,7 @@ function VisibilityToggle({ status, onChange, disabled }) {
   );
 }
 
-// Visibility label.
+// â”€â”€ Visibility label â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function VisibilityLabel({ status }) {
   if (status === VIS.PUBLIC)
     return (
@@ -203,30 +166,14 @@ function VisibilityLabel({ status }) {
   );
 }
 
-// Main page.
+// â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function StudentLibraryCourseDetailPage() {
   const navigate = useNavigate();
-  const location = useLocation();
   const params = useParams();
-  const routeSubjectName = params.courseId ? decodeURIComponent(params.courseId) : "";
-  const stateSubject = location.state || {};
-  const subjectName = stateSubject.subjectName || routeSubjectName;
-  const stateSubjectId = Number(stateSubject.subjectId);
+  const subjectName = params.courseId;
 
   const [subjectId, setSubjectId] = useState(null);
-  const [semesterName, setSemesterName] = useState(stateSubject.semesterName || "My Library");
-  const historyCtx = useHistoryContext();
-
-  useEffect(() => {
-    if (subjectName && historyCtx?.addToHistory) {
-      historyCtx.addToHistory({
-        type: "course",
-        label: subjectName,
-        courseId: subjectName,
-        semester: semesterName !== "My Library" ? semesterName : "Library",
-      });
-    }
-  }, [subjectName, semesterName, historyCtx]);
+  const [semesterName, setSemesterName] = useState("My Library");
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
@@ -234,41 +181,31 @@ export default function StudentLibraryCourseDetailPage() {
   const [dialog, setDialog] = useState(null);
   const [editDoc, setEditDoc] = useState(null);
   const [shareDoc, setShareDoc] = useState(null);
-  const [previewDoc, setPreviewDoc] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState("");
-  const [previewError, setPreviewError] = useState("");
-  const [error, setError] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
   const userId = getCurrentUserId();
-  // Normalized note.
+  // track doc IDs Ä‘ang trong quÃ¡ trÃ¬nh toggle (Ä‘á»ƒ disable trÃ¡nh double-click)
   const [togglingIds, setTogglingIds] = useState(new Set());
-  // Cooldown check mirrors DocumentService.updateVisibility().
+  // { title, message } â€” hiá»‡n VisibilityNoticeModal khi bá»‹ cooldown/409
   const [notice, setNotice] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
-    setError("");
     semesterApi.getAll().then((data) => {
       for (const sem of data) {
-        const found = sem.subjects?.find((s) => (
-          Number.isFinite(stateSubjectId)
-            ? Number(s.subjectId) === stateSubjectId
-            : s.subjectName === subjectName
-        ));
+        const found = sem.subjects?.find((s) => s.subjectName === subjectName);
         if (found) {
           setSubjectId(found.subjectId);
           setSemesterName(sem.semesterName);
           documentApi
-            .getBySubject(found.subjectId)
+            .getByUser(userId)
             .then((docs) => {
               const currentCourseDocs = (Array.isArray(docs) ? docs : []).filter(
-                (doc) => !isMockSeedDocument(doc),
+                (doc) =>
+                  Number(doc.subjectId) === Number(found.subjectId) &&
+                  !isMockSeedDocument(doc),
               );
               setDocs(currentCourseDocs);
             })
             .catch(() => {
               setDocs([]);
-              setError("Could not load documents for this course.");
             })
             .finally(() => {
               setLoading(false);
@@ -276,42 +213,9 @@ export default function StudentLibraryCourseDetailPage() {
           return;
         }
       }
-      setDocs([]);
       setLoading(false);
-    }).catch(() => {
-      setDocs([]);
-      setLoading(false);
-      setError("Could not load this course.");
     });
-  }, [stateSubjectId, subjectName, userId]);
-
-  useEffect(() => {
-    if (!previewDoc?.documentId || !canEmbedPreview(previewDoc.documentType)) {
-      setPreviewUrl("");
-      setPreviewError("");
-      return undefined;
-    }
-
-    let objectUrl = "";
-    let cancelled = false;
-    setPreviewUrl("");
-    setPreviewError("");
-
-    fetchDocumentBlob(previewDoc.documentId, "preview")
-      .then((blob) => {
-        if (cancelled) return;
-        objectUrl = URL.createObjectURL(blob);
-        setPreviewUrl(objectUrl);
-      })
-      .catch((err) => {
-        if (!cancelled) setPreviewError(err.message || "Could not preview this document.");
-      });
-
-    return () => {
-      cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [previewDoc?.documentId, previewDoc?.documentType]);
+  }, [subjectName, userId]);
 
   const totalPages = Math.max(1, Math.ceil(docs.length / ITEMS_PER_PAGE));
   const safePage = Math.min(page, totalPages);
@@ -334,27 +238,27 @@ export default function StudentLibraryCourseDetailPage() {
     return arr;
   }, [totalPages, safePage]);
 
-  // Normalized note.
+  // â”€â”€ Toggle visibility (3 tráº¡ng thÃ¡i) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async function handleToggleVisibility(doc) {
     if (togglingIds.has(doc.documentId)) return;
 
     let newStatus;
     if (doc.visibilityStatus === VIS.PUBLIC) {
-      // PRIVATE: toggle off.
+      // PUBLIC â†’ PRIVATE: tá»©c thÃ¬, khÃ´ng cáº§n admin
       newStatus = VIS.PRIVATE;
     } else if (doc.visibilityStatus === VIS.PRIVATE) {
-      // PRIVATE: toggle off.
+      // PRIVATE â†’ PENDING_REVIEW: gá»­i yÃªu cáº§u admin duyá»‡t
       newStatus = VIS.PENDING;
     } else if (doc.visibilityStatus === VIS.PENDING) {
-      // PRIVATE: toggle off.
+      // PENDING â†’ PRIVATE: tá»± há»§y request trÆ°á»›c khi admin duyá»‡t
       newStatus = VIS.PRIVATE;
     } else {
       return;
     }
 
-    // Cooldown check mirrors DocumentService.updateVisibility().
-    // Normalized note.
-    // Normalized note.
+    // Check cooldown 1h ngay á»Ÿ FE trÆ°á»›c khi gá»i BE â€” cháº·n viá»‡c báº¥m liÃªn tá»¥c
+    // báº¯n nhiá»u request lÃªn server trong lÃºc cháº¯c cháº¯n sáº½ bá»‹ 429. BE váº«n lÃ 
+    // nguá»“n sá»± tháº­t cuá»‘i cÃ¹ng (case bÃªn dÆ°á»›i váº«n xá»­ lÃ½ 429 náº¿u lá»‡ch giá»/Ä‘a tab).
     if (newStatus === VIS.PENDING) {
       const remaining = getCooldownRemainingMs(doc);
       if (remaining > 0) {
@@ -386,11 +290,11 @@ export default function StudentLibraryCourseDetailPage() {
         ),
       );
     } catch (err) {
-      // Normalized note.
-      // Normalized note.
-      // Cooldown check mirrors DocumentService.updateVisibility().
-      // Normalized note.
-      // Cooldown check mirrors DocumentService.updateVisibility().
+      // DÃ¹ng err.status (libraryApi.js Ä‘Ã£ set tá»« HTTP status code) â€” Ä‘Ã¡ng tin
+      // cáº­y hÆ¡n Ä‘oÃ¡n substring trong err.message, vÃ¬ BE tráº£ message tiáº¿ng
+      // Viá»‡t thuáº§n (khÃ´ng chá»©a "429"/"cooldown") nÃªn cÃ¡ch Ä‘oÃ¡n cÅ© luÃ´n fail.
+      // Hiá»‡n tháº³ng err.message tá»« BE Ä‘á»ƒ khÃ´ng pháº£i Ä‘á»“ng bá»™ tay ná»™i dung/thá»i
+      // lÆ°á»£ng cooldown á»Ÿ 2 nÆ¡i (BE Ä‘á»•i gÃ¬, FE tá»± Ä‘Ãºng theo).
       if (err?.status === 429) {
         setNotice({ title: "Try again later", message: err.message });
       } else if (err?.status === 409) {
@@ -410,25 +314,17 @@ export default function StudentLibraryCourseDetailPage() {
     }
   }
 
-  async function handleDelete(doc) {
-    try {
-      setIsSaving(true);
-      setError("");
-      await documentApi.delete(doc.documentId);
+  function handleDelete(doc) {
+    documentApi.delete(doc.documentId).then(() => {
       setDocs((prev) => prev.filter((d) => d.documentId !== doc.documentId));
-      setPreviewDoc((current) => current?.documentId === doc.documentId ? null : current);
       setDialog(null);
-    } catch (err) {
-      setError(err.message || "Could not delete this document.");
-    } finally {
-      setIsSaving(false);
-    }
+    });
   }
 
-  // Normalized note.
-  // Normalized note.
-  // Normalized note.
-  // Normalized note.
+  // Gá»i BE tháº­t (PATCH /documents/{id}/title). KhÃ´ng báº¯t lá»—i á»Ÿ Ä‘Ã¢y â€” Ä‘á»ƒ lá»—i
+  // throw lÃªn cho EditDocumentModal tá»± catch + hiá»‡n inline, giá»¯ modal má»Ÿ Ä‘á»ƒ
+  // user sá»­a/thá»­ láº¡i. KhÃ´ng tá»± setEditDoc(null): modal tá»± gá»i onClose() khi
+  // onSave resolve thÃ nh cÃ´ng.
   async function handleUpdate(doc, title) {
     const updated = await documentApi.updateTitle(doc.documentId, title);
     setDocs((prev) =>
@@ -459,12 +355,6 @@ export default function StudentLibraryCourseDetailPage() {
             setShowUpload(false);
           }}
         />
-      )}
-
-      {error && (
-        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
-          {error}
-        </div>
       )}
 
       {/* Breadcrumb */}
@@ -596,13 +486,12 @@ export default function StudentLibraryCourseDetailPage() {
               <div className="text-sm text-gray-600 font-medium">
                 {doc.documentSize
                   ? (doc.documentSize / 1024 / 1024).toFixed(1) + " MB"
-                  : "-"}
+                  : "â€”"}
               </div>
 
               {/* Actions */}
               <div>
                 <DocumentActionMenu
-                  onPreview={() => setPreviewDoc(doc)}
                   onEdit={() => setEditDoc(doc)}
                   onShare={() => setShareDoc(doc)}
                   onDelete={() => setDialog({ type: "delete", doc })}
@@ -621,75 +510,6 @@ export default function StudentLibraryCourseDetailPage() {
         />
       )}
 
-      {previewDoc && (
-        <div className="lib-modal-overlay" onClick={() => setPreviewDoc(null)}>
-          <div className="dm-preview-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="dm-preview-header">
-              <div className="dm-preview-header-left">
-                <div>
-                  <h2 className="dm-preview-title">{previewDoc.title || previewDoc.documentName}</h2>
-                  <p className="dm-preview-meta">
-                    <span
-                      style={{
-                        display: "inline-block",
-                        padding: "3px 8px",
-                        borderRadius: 5,
-                        background: "#eef2ff",
-                        color: "#4f46e5",
-                        fontSize: 10,
-                        fontWeight: 800,
-                      }}
-                    >
-                      {getDocumentType(previewDoc)}
-                    </span>
-                    &nbsp;&nbsp;{subjectName} &nbsp;&bull;&nbsp; {semesterName} &nbsp;&bull;&nbsp; {getDocumentSizeLabel(previewDoc)}
-                  </p>
-                </div>
-              </div>
-              <button className="rq-close-btn" aria-label="Close preview" onClick={() => setPreviewDoc(null)}>
-                x
-              </button>
-            </div>
-            <div className="dm-review-layout">
-              <div className="dm-preview-body">
-                {canEmbedPreview(previewDoc.documentType) ? (
-                  previewUrl ? (
-                    <iframe className="dm-preview-frame" title={`Preview ${previewDoc.title || previewDoc.documentName}`} src={previewUrl} />
-                  ) : (
-                    <div className="dm-preview-thumb">
-                      <p>{previewError || "Loading preview..."}</p>
-                    </div>
-                  )
-                ) : (
-                  <div className="dm-preview-thumb">
-                    <p className="dm-preview-thumb-name">{previewDoc.title || previewDoc.documentName}</p>
-                    <p className="dm-preview-thumb-size">Preview is not available for this file type.</p>
-                  </div>
-                )}
-              </div>
-              <div className="dm-preview-info">
-                <div className="dm-preview-info-row">
-                  <span>Course</span>
-                  <strong>{subjectName}</strong>
-                </div>
-                <div className="dm-preview-info-row">
-                  <span>Upload time</span>
-                  <strong>{previewDoc.uploadedAt ? new Date(previewDoc.uploadedAt).toLocaleString() : "-"}</strong>
-                </div>
-                <div className="dm-preview-info-row">
-                  <span>Status</span>
-                  <strong>{previewDoc.visibilityStatus || "PRIVATE"}</strong>
-                </div>
-                <div className="dm-preview-info-row">
-                  <span>File</span>
-                  <strong>{previewDoc.documentName || previewDoc.title}</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {editDoc && (
         <EditDocumentModal
           doc={{ ...editDoc, name: editDoc.title }}
@@ -705,7 +525,6 @@ export default function StudentLibraryCourseDetailPage() {
           fileName={dialog.doc.title}
           onCancel={() => setDialog(null)}
           onConfirm={() => handleDelete(dialog.doc)}
-          loading={isSaving}
         />
       )}
 
@@ -772,7 +591,7 @@ export default function StudentLibraryCourseDetailPage() {
   );
 }
 
-// PRIVATE: toggle off.
+// â”€â”€ Upload Modal (PRIVATE hardcode, khÃ´ng cÃ³ dropdown visibility) â”€â”€â”€
 function LibraryUploadModal({ subjectId, onClose, onUploaded }) {
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState("");
@@ -784,7 +603,7 @@ function LibraryUploadModal({ subjectId, onClose, onUploaded }) {
     if (!file || !title.trim() || !subjectId) return;
     setUploading(true);
     try {
-      // PRIVATE: toggle off.
+      // visibilityStatus luÃ´n lÃ  "PRIVATE" â€” hardcode
       const newDoc = await documentApi.upload(
         file,
         title.trim(),
@@ -794,9 +613,9 @@ function LibraryUploadModal({ subjectId, onClose, onUploaded }) {
       );
       onUploaded?.(newDoc);
       setUploading(false);
-    } catch (error) {
+    } catch {
       setUploading(false);
-      alert(error?.message || "Upload failed! Please try again.");
+      alert("Upload failed! Please try again.");
     }
   }
 
@@ -915,7 +734,7 @@ function LibraryUploadModal({ subjectId, onClose, onUploaded }) {
             />
           </div>
 
-          {/* Private notice */}
+          {/* Private notice â€” thay cho dropdown */}
           <div className="flex items-center gap-2.5 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200">
             <svg
               width="16"

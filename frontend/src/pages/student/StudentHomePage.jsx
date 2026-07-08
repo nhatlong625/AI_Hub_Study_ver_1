@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import PageHeader from "../../components/common/PageHeader";
 import { useState, useMemo, useEffect } from "react";
-import { semesterApi } from "../../services/libraryApi";
+import { semesterApi, documentApi } from "../../services/libraryApi";
 
 // ── Badge config per semester ────────────────────────────────
 const SEMESTER_BADGE = {
@@ -50,42 +50,9 @@ export default function StudentHomePage() {
       const sortedSemesters = [...data].sort(
         (a, b) => getSemesterNumber(a) - getSemesterNumber(b),
       );
-      const nextStatsMap = {};
-
-      sortedSemesters.forEach((sem) => {
-        const subjects = Array.isArray(sem.subjects) ? sem.subjects : [];
-        let totalFiles = 0;
-        let recentDoc = null;
-
-        subjects.forEach((sub) => {
-          totalFiles += Number(sub.documentCount || 0);
-          if (!sub.recentDocId) return;
-
-          const candidate = {
-            documentId: sub.recentDocId,
-            subjectId: sub.subjectId,
-            title: sub.recentDocTitle || sub.recentDocName || "Untitled document",
-            documentName: sub.recentDocName,
-            documentType: sub.recentDocType,
-            uploadedAt: sub.recentDocUploadedAt,
-            visibilityStatus: "PUBLIC",
-          };
-
-          if (
-            !recentDoc ||
-            new Date(candidate.uploadedAt || 0) > new Date(recentDoc.uploadedAt || 0)
-          ) {
-            recentDoc = candidate;
-          }
-        });
-
-        nextStatsMap[sem.semesterId] = { totalFiles, recentDoc };
-      });
 
       setSemesters(sortedSemesters);
-      setStatsMap(nextStatsMap);
       setLoading(false);
-      return;
 
       // Load public docs count + recent doc cho từng semester
       // Gọi getPublicBySubject cho từng subject rồi gộp lại theo semester

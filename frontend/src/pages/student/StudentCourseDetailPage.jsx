@@ -75,17 +75,6 @@ export default function StudentCourseDetailPage() {
     });
   }, [courseId]);
 
-  useEffect(() => {
-    if (courseId && historyCtx?.addToHistory) {
-      historyCtx.addToHistory({
-        type: "course",
-        label: courseId,
-        courseId,
-        semester: semester !== "Loading..." ? semester : "Semester 1",
-      });
-    }
-  }, [courseId, semester, historyCtx]);
-
   const totalPages = Math.max(1, Math.ceil(docs.length / ITEMS_PER_PAGE));
   const pagedDocs = docs.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,

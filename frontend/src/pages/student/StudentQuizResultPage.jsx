@@ -70,73 +70,6 @@ function AnalyzingScreen() {
 }
 
 // ── Main Result Page ───────────────────────────────────────────────────────
-function truthy(value) {
-  return value === true || value === 1 || String(value).toLowerCase() === "true";
-}
-
-function normalizeAnswer(value) {
-  return String(value ?? "").trim().toLowerCase();
-}
-
-function getReviewOptions(question) {
-  const options = Array.isArray(question.options) ? question.options : [];
-  if (options.length > 0) return options;
-
-  const fallback = [];
-  if (question.selectedAnswer) {
-    fallback.push({ id: "selected", content: question.selectedAnswer, isCorrect: false });
-  }
-  if (
-    question.correctAnswer &&
-    normalizeAnswer(question.correctAnswer) !== normalizeAnswer(question.selectedAnswer)
-  ) {
-    fallback.push({ id: "correct", content: question.correctAnswer, isCorrect: true });
-  }
-  return fallback;
-}
-
-function optionState(question, option) {
-  const selectedOptionId = Number(question.selectedOptionId);
-  const optionId = Number(option.id);
-  const selectedById = Number.isFinite(selectedOptionId) && selectedOptionId === optionId;
-  const selectedByText =
-    !Number.isFinite(selectedOptionId) &&
-    normalizeAnswer(question.selectedAnswer) === normalizeAnswer(option.content);
-  const isSelected = selectedById || selectedByText;
-  const isCorrect =
-    truthy(option.isCorrect) ||
-    normalizeAnswer(option.content) === normalizeAnswer(question.correctAnswer);
-
-  if (isCorrect) return { kind: "correct", isSelected, isCorrect };
-  if (isSelected) return { kind: "wrong", isSelected, isCorrect };
-  return { kind: "neutral", isSelected, isCorrect };
-}
-
-function optionStyle(kind) {
-  if (kind === "correct") {
-    return {
-      border: "1px solid #86efac",
-      background: "#ecfdf5",
-      color: "#065f46",
-      labelColor: "#10b981",
-    };
-  }
-  if (kind === "wrong") {
-    return {
-      border: "1px solid #fca5a5",
-      background: "#fff5f5",
-      color: "#991b1b",
-      labelColor: "#ef4444",
-    };
-  }
-  return {
-    border: "1px solid #e5e7eb",
-    background: "#ffffff",
-    color: "#374151",
-    labelColor: "#9ca3af",
-  };
-}
-
 function StudentQuizResultPage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
@@ -593,6 +526,7 @@ function StudentQuizResultPage() {
           {filtered.map((q) => {
             const qNumber = questions.indexOf(q) + 1;
             const isCorrect = Boolean(q.isCorrect);
+            const aiExplanation = q.aiExplanation ?? null;
 
             return (
               <div key={q.id} className="p-6">
@@ -625,76 +559,86 @@ function StudentQuizResultPage() {
                   </div>
                 </div>
 
-                <div className="ml-11">
-                  <div className="grid grid-cols-2 gap-3">
-                    {getReviewOptions(q).map((option, optionIndex) => {
-                      const state = optionState(q, option);
-                      const style = optionStyle(state.kind);
-                      const label = String.fromCharCode(65 + optionIndex);
-
-                      return (
-                        <div
-                          key={option.id ?? `${q.id}-${optionIndex}`}
-                          className="p-4 rounded-xl"
-                          style={{
-                            border: style.border,
-                            background: style.background,
-                          }}
-                        >
-                          <div className="flex items-start gap-3">
-                            <span
-                              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0"
-                              style={{
-                                background:
-                                  state.kind === "correct"
-                                    ? "#bbf7d0"
-                                    : state.kind === "wrong"
-                                      ? "#fecaca"
-                                      : "#f3f4f6",
-                                color: style.color,
-                              }}
-                            >
-                              {label}
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                {state.isCorrect && (
-                                  <span
-                                    className="text-[10px] font-black uppercase tracking-wider"
-                                    style={{ color: "#10b981" }}
-                                  >
-                                    Correct Answer
-                                  </span>
-                                )}
-                                {state.isSelected && !state.isCorrect && (
-                                  <span
-                                    className="text-[10px] font-black uppercase tracking-wider"
-                                    style={{ color: "#ef4444" }}
-                                  >
-                                    Your Answer
-                                  </span>
-                                )}
-                                {state.isSelected && state.isCorrect && (
-                                  <span
-                                    className="text-[10px] font-black uppercase tracking-wider"
-                                    style={{ color: "#10b981" }}
-                                  >
-                                    Your Answer
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-sm font-medium leading-relaxed" style={{ color: style.color }}>
-                                {option.content}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                {/* Your Answer vs Correct Answer */}
+                <div className="grid grid-cols-2 gap-3 ml-11 mb-4">
+                  <div
+                    className="p-4 rounded-xl"
+                    style={{
+                      border: `1px solid ${isCorrect ? "#a7f3d0" : "#fca5a5"}`,
+                      background: isCorrect ? "#f0fdf4" : "#fff5f5",
+                    }}
+                  >
+                    <p
+                      className="text-xs font-bold mb-1.5"
+                      style={{ color: isCorrect ? "#10b981" : "#ef4444" }}
+                    >
+                      Your Answer
+                    </p>
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: "#374151" }}
+                    >
+                      {q.selectedAnswer || (
+                        <span style={{ color: "#9ca3af", fontStyle: "italic" }}>
+                          Not answered
+                        </span>
+                      )}
+                    </p>
                   </div>
-                  {!q.selectedAnswer && (
-                    <p className="mt-3 text-xs italic" style={{ color: "#9ca3af" }}>
-                      Not answered
+                  <div
+                    className="p-4 rounded-xl"
+                    style={{
+                      border: "1px solid #a7f3d0",
+                      background: "#f0fdf4",
+                    }}
+                  >
+                    <p
+                      className="text-xs font-bold mb-1.5"
+                      style={{ color: "#10b981" }}
+                    >
+                      Correct Answer
+                    </p>
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: "#374151" }}
+                    >
+                      {q.correctAnswer}
+                    </p>
+                  </div>
+                </div>
+
+                {/* AI Explanation */}
+                <div
+                  className="ml-11 p-4 rounded-xl"
+                  style={{ background: "#f5f3ff", border: "1px solid #e0d9ff" }}
+                >
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="#6366f1"
+                      stroke="none"
+                    >
+                      <path d="M12 2C12 2 13 8 18 9C13 10 12 16 12 16C12 16 11 10 6 9C11 8 12 2 12 2Z" />
+                    </svg>
+                    <span
+                      className="text-xs font-bold"
+                      style={{ color: "#6366f1" }}
+                    >
+                      AI Explanation
+                    </span>
+                  </div>
+                  {aiExplanation ? (
+                    <p
+                      className="text-sm leading-relaxed"
+                      style={{ color: "#374151" }}
+                    >
+                      {aiExplanation}
+                    </p>
+                  ) : (
+                    <p className="text-xs italic" style={{ color: "#9ca3af" }}>
+                      AI explanation will be available in a future update.
                     </p>
                   )}
                 </div>
